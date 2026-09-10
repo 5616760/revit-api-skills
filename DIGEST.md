@@ -37,7 +37,7 @@
 7. **事件、更新器与命令集成**（K、Q）
 8. **协同交付**（N、O、P）
 
-对应知识点间的依赖/对比/组成关系见 INDEX.md 引用图；术语查 GLOSSARY.md（110 词条）。
+对应知识点间的依赖/对比/组成关系见 README.md 引用图；术语查 GLOSSARY.md（110 词条）。
 
 ## 四、如何使用（最重要）
 
@@ -56,7 +56,7 @@
 - **查询类**（"怎么拿到 XX"）→ 导航/获取类技能
 
 ### 4.3 配套查阅
-- 不知道问哪个 → 先查 `INDEX.md`（按主题浏览 159 个技能名与一句话说明）
+- 不知道问哪个 → 先查 `README.md`（按主题浏览 159 个技能名与一句话说明）
 - 想学完整脉络 → 按第 3 节 8 阶段顺序逐技能读 SKILL.md
 - 查术语/类 → `GLOSSARY.md`
 
@@ -67,4 +67,4 @@
 ## 五、产出位置
 
 - 技能集安装于：`~/.workbuddy/skills/revit-*`（159 个，全局可用）
-- 源工程：`G:\DATA\WorkBuddy\Skills\MySkill\RevitAPI\`（含 BOOK_OVERVIEW.md、INDEX.md、GLOSSARY.md、_stage3/ 关系网络、_stage4/ 测试与判卷证据、PIPELINE_STATE.md 全流程记录）
+- 源工程：`G:\DATA\WorkBuddy\Skills\MySkill\RevitAPI\`（含 BOOK_OVERVIEW.md、README.md、GLOSSARY.md、_stage3/ 关系网络、_stage4/ 测试与判卷证据、PIPELINE_STATE.md 全流程记录）
