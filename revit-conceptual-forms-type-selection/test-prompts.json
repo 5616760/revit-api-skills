@@ -1,0 +1,48 @@
+{
+  "skill": "revit-conceptual-forms-type-selection",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "体量族里创建旋转体，是调 NewRevolveForms 吗？跟族文件里的 Revolution 是一回事吗？",
+      "expected_behavior": "激活后应强调双类体系割裂：概念设计所有形状统一用 Form 类（New*Forms 系列），族文件用 Blend/Extrusion/Revolution 等具体类，不能混用。",
+      "notes": "正面场景：体量旋转体 + 双类体系困惑"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "概念设计里要一个没有厚度的曲面面片，用拉伸设零深度可以吗？",
+      "expected_behavior": "激活后应纠正：无厚度面片应选表面形状（单个轮廓、不给定高度），而不是'拉伸+零深度'。",
+      "notes": "正面场景：表面形状语义"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "用多条点曲线做放样融合形状，创建入口是哪个方法？",
+      "expected_behavior": "激活后应给出多条 CurveByPoints 轮廓 → NewLoftForm 创建放样融合的链路。",
+      "notes": "正面场景：放样融合创建"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "在普通族文件里写代码创建拉伸体，用哪个类？",
+      "expected_behavior": "不应调用本 skill，理由：族文件环境创建三维形状走 FamilyItemFactory 的 NewExtrusion 等具体类，属于 revit-familyitemfactory-shape-creation 的触发面，本 skill 只管体量/概念设计环境的 Form 类体系。",
+      "notes": "跨 skill 混淆诱饵：族文件具体类 vs 体量 Form 类"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "帮我算一下房贷等额本息的月供",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 无关的金融计算请求。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我的代码是在体量环境里跑的，但轮廓是按族文件那套 CurveArrArray 组织的，能直接建形状吗？",
+      "expected_behavior": "激活后应辨析边界：概念设计的创建入口同样经 document.FamilyCreate 且提供 CurveArrArray 轮廓、事务中创建——数据结构相同，但方法必须用 New*Forms 系列；'结构兼容但方法名不兼容'是最易踩的混用点。",
+      "notes": "边界：两套体系数据结构相似但方法割裂"
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "skill": "revit-stairs-edit-scope-isolation",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "StairsEditScope 会话开着的时候调 Railing.Create 直接失败了，栏杆不就是楼梯的一部分吗，为什么不让建？",
+      "expected_behavior": "解释编辑上下文隔离规则：栏杆创建被明确排除在楼梯编辑会话之外，Railing.Create 必须在普通 Transaction 中调用；给出正确顺序——会话内建梯段/平台，Commit 后在普通事务里处理栏杆。",
+      "notes": "正面场景：会话内建栏杆失败（A2 场景 1）。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "要做\"自动建楼梯并替换成指定栏杆类型\"的批量脚本，事务顺序应该怎么排？",
+      "expected_behavior": "给出三步流程：StairsEditScope 内建楼梯并 Commit；普通事务里 GetAssociatedRailings() 找默认栏杆删除；同一普通事务里 Railing.Create 新建指定类型。",
+      "notes": "正面场景：批量脚本事务编排（A2 场景 2）。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "为什么梯段和平台必须开楼梯编辑会话才能建，栏杆又必须在会话外面建？Revit 这么设计是什么道理？",
+      "expected_behavior": "讲清\"图元族绑定编辑会话\"的一般规律：会话内事务对用户不可见、最终合并为一次撤销；不同图元族绑定不同作用域，混用即失败。",
+      "notes": "正面场景：作用域设计原理（A2 场景 3）。"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "用户撤销的时候楼梯和栏杆分成了好几步，顺序也很怪，怎么让撤销行为跟 UI 手工操作一致？",
+      "expected_behavior": "解释撤销菜单行为由事务结构决定：会话合并为一项、栏杆事务独立；如需合并体验可借助事务组思路统一撤销项，并按会话+普通事务的顺序排布。",
+      "notes": "正面场景：撤销行为调试（A2 场景 4）。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "遍历现有楼梯读每段的路径曲线、平台厚度这些信息，该用哪些方法？",
+      "expected_behavior": "不应调用本 skill，理由：这是已存在楼梯的只读对象模型访问（Stairs→Runs/Landings/Supports），属于 revit-stairs-object-model；本 skill 是创建侧的作用域隔离反例。",
+      "notes": "跨 skill 混淆诱饵：只读导航 vs 编辑会话隔离。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "怎么给外部命令注册键盘快捷键？",
+      "expected_behavior": "不应调用本 skill，理由：快捷键注册与楼梯编辑作用域无关。",
+      "notes": "完全无关的通用请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "新建楼梯时自动带出来的默认栏杆，我不想删它，只想在旁边再补一段栏杆，还要开编辑会话吗？",
+      "expected_behavior": "补建栏杆不需要也不允许在会话内：默认栏杆可保留，新增栏杆在会话 Commit 之后的普通事务里 Railing.Create。边界在\"栏杆创建永远走普通事务\"这条隔离规则，与是否保留默认栏杆无关。",
+      "notes": "边界场景：默认栏杆去留与作用域规则的正交性。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "楼梯编辑会话里建的那些构件，事务对用户是什么时候可见的？",
+      "expected_behavior": "说明会话内事务对用户不可见，最终随会话 Commit 合并为一次撤销——这是会话与普通事务在可见性上的关键边界，解释了为何会话内操作不适合直接面向用户的中间状态。",
+      "notes": "边界场景：会话内事务可见性。"
+    }
+  ]
+}

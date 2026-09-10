@@ -1,0 +1,62 @@
+{
+  "skill": "revit-performance-adviser-rules",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "想给插件加自定义性能检查，按公司标准查模型质量问题，规则怎么注册到 PerformanceAdviser？",
+      "expected_behavior": "激活后应说明 AddRule 在 OnStartup 注册、DeleteRule 在 OnShutdown 注销的生命周期，以及 PerformanceAdviser 兼规则注册中心与执行引擎的定位。",
+      "notes": "A2 场景 1/3，注册外壳本体"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "内置规则太多了，我只想跑其中几条指定的规则，该调哪个方法？",
+      "expected_behavior": "激活后应区分 ExecuteAllRules（全量）与 ExecuteRules（子集），给出按规则 ID 跑子集的做法。",
+      "notes": "A2 场景 2"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "性能检查发现的问题怎么报给用户？能像故障消息那样提示吗？",
+      "expected_behavior": "激活后应说明规则结果可复用故障消息机制呈现，并提醒别让性能问题变成弹窗刷屏。",
+      "notes": "A2 场景 4"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "规则类里的七个方法怎么实现？GetElementFilter 和 ExecuteElementCheck 各放什么逻辑？",
+      "expected_behavior": "不应调用本 skill，理由：规则内部实现是 IPerformanceAdviserRule 七方法契约（revit-performance-adviser-rule-interface），本 skill 管注册/执行/呈现外壳。",
+      "notes": "跨 skill 混淆诱饵：外壳 vs 内核"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "怎么注册一个自定义业务故障，在模型里给用户发警告？",
+      "expected_behavior": "不应调用本 skill，理由：自定义故障注册走 FailureDefinitionRegistry（revit-failure-definition-registration），性能规则虽复用消息机制但注册源不同。",
+      "notes": "混淆诱饵：性能规则 vs 故障定义"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "汽车多久保养一次比较好？",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit 性能检查完全无关的汽车保养咨询。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我就做一次性的模型分析，结果发个报告就完事，需要做成可注册的规则吗？",
+      "expected_behavior": "不应调用本 skill 的注册流程，理由：一次性分析不需要注册成可复用规则，直接写分析代码即可，注册反而残留生命周期负担。",
+      "notes": "边界：一次性分析免注册"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "直接 ExecuteAllRules 跑全部规则最省事，会不会有什么副作用？",
+      "expected_behavior": "应激活本 skill 并警示边界：ExecuteAllRules 可能跑掉不想要的规则，需要精确控制时用 ExecuteRules 子集；规则结果走故障流水线需防弹窗刷屏。",
+      "notes": "边界：全量执行的风险"
+    }
+  ]
+}

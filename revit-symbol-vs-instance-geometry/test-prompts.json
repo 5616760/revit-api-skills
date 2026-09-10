@@ -1,0 +1,62 @@
+{
+  "skill": "revit-symbol-vs-instance-geometry",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "用提取出来的族实例几何面去创建基于面的族，一直创建失败，是不是参照有问题？",
+      "expected_behavior": "诊断 GetInstanceGeometry 返回副本几何、副本无有效 Reference 导致创建失败，改用 GetSymbolGeometry()（唯一非副本重载）获取带有效参照的几何。",
+      "notes": "正面场景：基于面的族创建失败排障。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "给构件的面加尺寸标注，选不中我提取的那个面，报参照无效。",
+      "expected_behavior": "识别为副本几何无有效 Reference 的典型症状，切换到 GetSymbolGeometry 取原件几何上的面做标注参照。",
+      "notes": "正面场景：尺寸标注选不中提取面。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "GetSymbolGeometry 拿到的坐标好像不在项目位置上，怎么变换过去？",
+      "expected_behavior": "说明 GetSymbolGeometry 返回族坐标系的几何，须用 GeometryInstance.Transform.OfPoint（或 OfVector）手动把点变换到项目坐标系。",
+      "notes": "正面场景：族坐标到项目坐标的手动变换。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "遍历一面系统族墙的几何，把所有面和边都取出来。",
+      "expected_behavior": "不应调用本 skill，理由：系统族墙没有 Symbol/Instance 几何之分，走通用几何提取流程 skill。",
+      "notes": "混淆诱饵：非族实例对象无副本语义问题。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "想把用户刚才拾取的那个面存成字符串，下次打开文档还能还原回来。",
+      "expected_behavior": "不应调用本 skill，理由：这是 Reference 跨会话持久化需求（ConvertToStableRepresentation），应激活稳定句柄相关 skill。",
+      "notes": "混淆诱饵：几何提取副本语义 vs 参照持久化。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "电脑最近频繁蓝屏，帮我看看可能是什么原因。",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 开发完全无关的系统故障排查请求。",
+      "notes": "完全无关请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我只是算算柱子的体积和表面积，有没有必要用符号几何再手动变换坐标系？",
+      "expected_behavior": "边界判别：纯分析场景 GetInstanceGeometry 副本恰好合适，无需为非副本付出 SymbolGeometry + 手动变换的代价；只有创建参照需求才必须原件几何。",
+      "notes": "边界场景：分析用副本即可 vs 创建须原件。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "遍历梁的几何树时发现 GeometryInstance 直接不见了，这和副本不副本是一回事吗？",
+      "expected_behavior": "边界判别：两个问题正交——GeometryInstance 消失是引擎因连接/相交生成唯一副本导致 Solid 浮到顶层（结构问题），副本语义是 GetInstanceGeometry 每次返回新拷贝（Reference 有效性问题）；应组合 GeometryInstance 缺失反例 skill 一起诊断。",
+      "notes": "边界场景：结构消失 vs 副本语义两个维度易混。"
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "skill": "revit-nested-link-unload",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "项目是 A 链接 B、B 又链接 C 的三级结构，我卸载 B 之后 C 会怎么样？",
+      "expected_behavior": "激活后应说明嵌套链接随父链接卸载而自动卸载，子链接不会独立存活。",
+      "notes": "A2 场景 3，本体"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "写批量卸载脚本遇到多级嵌套链接，要不要递归遍历整棵链接树逐层卸载？",
+      "expected_behavior": "激活后应明确不需要也不能递归：卸载操作只处理顶层链接，逐层单独卸载子链接的调用往往无效或异常。",
+      "notes": "A2 场景 1"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "在 TransmissionData 的引用 ID 集合里找不到嵌套链接，是数据丢了还是我用法不对？",
+      "expected_behavior": "激活后应指出 TransmissionData 只含顶层链接条目，嵌套链接本来就不在里面，遍历落空是设计而非 bug。",
+      "notes": "A2 场景 2"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "只想卸载最深层那个子链接，不动它的父链，先帮我确认下可不可行。",
+      "expected_behavior": "激活后应说明无法只卸载深层子链接而保留父链，卸载以顶层父链接节点解决。",
+      "notes": "A2 场景 4"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "服务器迁移后要离线批量重定向一批文件的链接路径，顶层链接的路径怎么改？",
+      "expected_behavior": "不应调用本 skill，理由：离线批量改路径的流程是 revit-transmissiondata-offline，本 skill 只是其中嵌套处理规则。",
+      "notes": "跨 skill 混淆诱饵：规则 vs 流程"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "检出了组里的一个图元，结果整组都被连带检出了，这是什么机制？",
+      "expected_behavior": "不应调用本 skill，理由：组成员随组连带检出是所有权层的传递性（revit-checkout-group-propagation），与链接加载层作用域对立。",
+      "notes": "混淆诱饵：同属传递性家族但层级不同"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "附近哪家宠物医院口碑好？",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 完全无关的生活咨询。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我的文件里就一层链接，没有嵌套，卸载它有什么讲究吗？",
+      "expected_behavior": "不应调用本 skill，理由：单层链接无嵌套，直接对链接本体操作即可，无需拓扑分析。",
+      "notes": "边界：单层链接无需本 skill"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我就是想把嵌套链接的结构枚举出来看一眼树形关系。",
+      "expected_behavior": "不应调用本 skill 的卸载语义，理由：只枚举查看嵌套结构用 GetChildIds 遍历即可，本 skill 讲的是卸载传递性不是遍历方法。",
+      "notes": "边界：看与卸不同"
+    }
+  ]
+}

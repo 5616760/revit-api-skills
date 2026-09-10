@@ -1,0 +1,62 @@
+{
+  "skill": "revit-iupdater-forbidden-api-list",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我的 updater 在 Execute 里调 ViewSheet.AddView 往图纸里放视图，抛了 ForbiddenForDynamicUpdateException，这类 API 为什么不让在更新器里调？",
+      "expected_behavior": "应指出 DMU 更新回调中存在禁用 API 清单，ViewSheet.AddView 是其中之一；在更新回调中调用会抛 ForbiddenForDynamicUpdateException；这类操作应移出 updater（改由命令、事件或 ExternalEvent 等正常 API 上下文执行）。",
+      "notes": "核心场景：ViewSheet.AddView 禁入"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我想让 updater 在更新完成后自动把文档保存一下，Execute 里调 doc.Save 可以吗？",
+      "expected_behavior": "应说明不行：Save/SaveAs/Close 一类文档级操作在禁用清单中，不能在 IUpdater.Execute 里调用（会抛 ForbiddenForDynamicUpdateException）；保存需求应移到事务提交后的其他时机（如命令或事件）处理。",
+      "notes": "核心场景：Save/SaveAs/Close 禁入"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我的更新器逻辑是删掉旧图元再重建一个新图元来达到修改效果，书里说有更好的做法吗？",
+      "expected_behavior": "应给出'修改优先于删除+重建'的纪律：在更新回调中优先原地修改（改参数、改几何），避免删除后重建——删除+重建会改变图元身份、打断关联引用，且更新回调内的删除/新建行为风险更高。",
+      "notes": "核心场景：修改优先于删除重建"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "我在 updater 的 Execute 里想动态调用 UpdaterRegistry 注册另一个更新器，行不行？",
+      "expected_behavior": "应指出不行：UpdaterRegistry 的注册/注销等调用属于禁入清单，不能在更新回调中执行；注册时机应在 OnStartup（或文档打开时），注销在 OnShutdown，保持注册与生命周期挂钩（衔接 revit-updater-registration-triggers）。",
+      "notes": "核心场景：UpdaterRegistry 调用禁入"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我的 updater 改了图元又触发自己更新，循环了好多层之后 Revit 弹窗说禁用了这个更新器，怎么回事？",
+      "expected_behavior": "不应激活本 skill。无限循环触发与 Revit 的禁用机制属于 revit-updater-failure-modes 的故障分类。本 skill 讲禁用 API 清单，与循环故障是两类问题。",
+      "notes": "跨 skill 混淆诱饵：updater-failure-modes"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我在 Execute 里 new Transaction 提交 updater 的修改，被 Revit 拒绝了，该怎么组织修改？",
+      "expected_behavior": "不应激活本 skill。Execute 内的事务规则（禁开新 Transaction、可用 SubTransaction、修改并入原事务）属于 revit-iupdater-execute-transaction-rules。本 skill 讲特定 API 的禁用清单，两者约束来源不同。",
+      "notes": "跨 skill 混淆诱饵：iupdater-execute-transaction-rules"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "有些 API 我查不到明确的禁用说明，但在 updater 回调里运行时也抛了 ForbiddenForDynamicUpdateException，怎么判断哪些能用哪些不能用？",
+      "expected_behavior": "应指出这是隐式陷阱：禁用约束不限于显式清单，凡是在更新回调中触碰文档加载/保存/注册类等被保护功能的 API 都可能抛该异常；实用判别方式是按异常类型识别（捕获 ForbiddenForDynamicUpdateException 即说明踩线），把该调用迁移出 updater，而不是逐个背清单。",
+      "notes": "边界：隐式陷阱与按异常识别"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我在 Execute 里想加载一个族文档（LoadFamily）来完成更新逻辑，既然不让调，有什么替代思路？",
+      "expected_behavior": "应给出迁移思路：LoadFamily 属于禁入操作，更新回调中不可用；替代方案是提前在命令/OnStartup/事件中加载好所需族，updater 只做原地修改（这也呼应'修改优先'的纪律），或把需要加载族的完整流程放到正常 API 上下文的命令中执行。",
+      "notes": "边界：禁用操作的替代方案"
+    }
+  ]
+}

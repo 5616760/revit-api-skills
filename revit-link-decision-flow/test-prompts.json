@@ -1,0 +1,69 @@
+{
+  "skill": "revit-link-decision-flow",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "怎么用代码创建并加载一个 Revit 链接？RevitLinkType 和 RevitLinkInstance 的流程是什么？",
+      "expected_behavior": "激活后应给出链接创建/加载的完整决策链，包括路径类型（Relative/Absolute/Server）与附着类型（Attachment/Overlay）的配置。",
+      "notes": "A2 场景 1，本体"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "想让某个链接用覆盖模式加载，父链接被直接打开时其他子链接不可见，Overlay 和 Attachment 怎么选？",
+      "expected_behavior": "激活后应解释 Overlay 与 Attachment 的语义差异及配错导致的链接意外可见/不可见。",
+      "notes": "A2 场景 2"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "要遍历文档里所有链接，按 Revit 链接、CAD 链接、贴花分类做不同处理，从哪入手？",
+      "expected_behavior": "激活后应给出先类型判断再操作（IsExternalFileReference 查询在前）的决策链，警告跳过类型判断把 CAD 链接当 Revit 链接处理会 API 族用错。",
+      "notes": "A2 场景 3"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "卸载一个链接之后再重载，加载结果怎么确认有没有成功？",
+      "expected_behavior": "激活后应提醒检查 RevitLinkLoadResults.LoadResult，避免加载失败被当作成功继续流程。",
+      "notes": "失败模式：忘记检查 LoadResult"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "服务器迁移之后项目文件夹下几百个 rvt 的链接路径全失效了，能不能不打开这些文件批量把路径改过来？",
+      "expected_behavior": "不应调用本 skill，理由：不打开文档的离线批量改路径是 revit-transmissiondata-offline 的职责，本 skill 的 API 都要求文档已打开。",
+      "notes": "跨 skill 混淆诱饵：在线操作 vs 离线批量"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "用户在链接模型里点选了一个面，我想在主体文件里基于这个面放族，怎么转参照？",
+      "expected_behavior": "不应调用本 skill，理由：链接内几何的拾取与 Reference 转换（CreateLinkReference）是 revit-link-reference-conversion 的职责。",
+      "notes": "混淆诱饵：文件层 vs 几何参照层"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "推荐几首适合工作时听的纯音乐。",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit 链接 API 完全无关的音乐推荐。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我就想知道当前文档里哪些图元挂着外部文件引用，列个清单就行。",
+      "expected_behavior": "不应调用本 skill 的完整决策链，理由：纯枚举查询用 ExternalFileUtils 一步即可（revit-external-file-reference-utils），无需走链接决策流程。",
+      "notes": "边界：查询需求不必走决策链"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "书上的 PathType 有个 Server 选项，我们现在用的是 BIM 360 云协作，能直接套吗？",
+      "expected_behavior": "激活本 skill 但需说明边界：书基于 Revit 2014，Server 指旧 Revit Server，对 BIM 360/云端路径覆盖不足，新版链接 API 与 2014 有差异需核对。",
+      "notes": "边界：2014 与云协作时代的差异"
+    }
+  ]
+}

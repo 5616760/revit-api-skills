@@ -1,0 +1,69 @@
+{
+  "skill": "revit-failure-handling-options",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "批处理要连续跑一百来个事务，每一步无关紧要的警告弹窗都跳出来打断，怎么把它们关掉？",
+      "expected_behavior": "激活后应给出 GetFailureHandlingOptions 后 SetForcedModalHandling(false) 等开关组合方案，并提醒 Commit 返回后事务可能仍 Pending 需轮询 GetStatus()。",
+      "notes": "A2 场景 1，批处理关弹窗"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "这一串小警告能不能别一个个弹，攒到批次最后一起提示？",
+      "expected_behavior": "激活后应说明 SetDelayedMiniWarnings(true) 可把小警告延迟到下一个事务结束显示，并提醒批次最后一个事务的延迟警告仍要处理。",
+      "notes": "A2 语言信号：delay mini warnings"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "事务回滚之后那些警告还挂在缓冲里，怎么样能回滚后自动清空？",
+      "expected_behavior": "激活后应给出 SetClearAfterRollback(true)，并说明默认值是 false、不清空会累积旧警告影响后续判断。",
+      "notes": "A2 场景 3"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "我想给某个事务挂一个终结器，每次事务结束时自动记日志，还有 ForcedModalHandling 关掉之后事务到底是什么状态？",
+      "expected_behavior": "激活后应说明 SetTransactionFinalizer 的用法，以及非模态处理后 Commit/RollBack 返回时事务可能仍是 Pending，必须轮询 GetStatus()。",
+      "notes": "A2 场景 4 + Pending 陷阱"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我们公司想让插件接管 Revit 所有的错误对话框，做一套企业级统一错误界面。",
+      "expected_behavior": "不应调用本 skill，理由：全局接管错误 UI 是会话级 IFailuresProcessor 的职责（revit-failures-processor-global），与逐事务配置 options 作用域相反。",
+      "notes": "跨 skill 混淆诱饵：事务级配置 vs 全局处理器"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "事务提交时故障到底按什么顺序被处理？预处理器、事件、处理器是怎么衔接的？",
+      "expected_behavior": "不应调用本 skill，理由：这是故障处理三步流水线框架问题（revit-failures-processing-steps），本 skill 只管五个开关的语义配置。",
+      "notes": "混淆诱饵：配置层 vs 流水线层"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "Revit 里怎么把标高符号改成我们自己画的样式？",
+      "expected_behavior": "不应调用本 skill，理由：与故障处理选项无关的界面/族定制请求。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我就写个单次操作的小命令，用户交互一次就完事，需要给事务配这些故障处理选项吗？",
+      "expected_behavior": "不应调用本 skill，理由：接受默认故障交互的单次操作无需过度配置，默认配置即可，本 skill 面向批处理等需要定制策略的场景。",
+      "notes": "边界：默认交互够用时别过度配置"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "插件只做只读统计，不改模型，能用 FailureHandlingOptions 把警告压掉吗？",
+      "expected_behavior": "不应调用本 skill，理由：只读操作没有事务、没有可配置的故障处理对象，警告抑制无从谈起。",
+      "notes": "边界：只读操作无事务"
+    }
+  ]
+}

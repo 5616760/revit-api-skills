@@ -1,0 +1,69 @@
+{
+  "skill": "revit-boundingbox-filter-tradeoffs",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我想把某一块矩形区域里的图元都找出来，比如和这个范围的框相交的都要，用什么过滤器比较省？",
+      "expected_behavior": "激活后判定查询语义（包含于区域/相交/包含点）并选 BoundingBox 家族过滤器（如 BoundingBoxIntersectsFilter）+ Outline 输入，说明它是低成本 QuickFilter 适合大范围初筛。",
+      "notes": "A2 场景1：区域检索正在选空间过滤工具。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "用边界框过滤找和指定范围相交的构件，结果里混进了一些斜墙和弧形梁，肉眼看着根本不在范围内，这是过滤器坏了吗？",
+      "expected_behavior": "激活后解释这是系统性误报：bbox 过滤比较的是边界框而非实际几何，旋转/异形元素的 bbox 包进大量空白区域；给出'bbox 快筛 + ElementIntersectsSolidFilter 几何复核'两段式方案。",
+      "notes": "A2 场景2：bbox 误报复现。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "模型特别大，我想先低成本把候选圈出来一小撮，再对这一小撮做精确的几何相交判断，这个思路怎么落地？",
+      "expected_behavior": "激活后落地两段式结构：先 bbox（QuickFilter）快筛出候选集，再对候选集叠加 ElementIntersectsSolidFilter（SlowFilter 只作用于小集合）做几何级精筛。",
+      "notes": "A2 场景3：先快后准的性能设计。"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "我用 PickBox 让用户在屏幕上框了一块区域，返回的这个 PickedBox 要怎么接到过滤器上去？",
+      "expected_behavior": "激活后把 PickBox 结果转换成 Outline（最小最大点围成的框），作为 BoundingBox 家族过滤器的输入接进空间过滤流水线。",
+      "notes": "A2 场景4：PickBox 框选结果转过滤器输入。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我要做一个真正的碰撞检查，判断一根梁和哪些构件的实体几何相交，结果要跟 Revit 界面里的干扰检查对得上。",
+      "expected_behavior": "不应调用本 skill，理由：需求是几何级精确相交判断（实体 vs 实体），不是边界框近似初筛，应触发 revit-intersects-filter-decisions。",
+      "notes": "跨 skill 混淆诱饵：C 组邻居 revit-intersects-filter-decisions 的触发面（clash detection、ElementIntersects*）——两个 skill 名字都带 Intersects 但语义差一个精度层级。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "拾取的时侯怎么让用户只能选中墙，别的图元点了也没反应？",
+      "expected_behavior": "不应调用本 skill，理由：讨论的是交互式拾取的范围限制（ISelectionFilter），不是拿到框之后怎么做空间过滤，应触发 revit-selection-pickobject-filter。",
+      "notes": "跨 skill 混淆诱饵：C 组邻居 revit-selection-pickobject-filter 的触发面（restrict selection）。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "帮我把这段英文 Revit 教程翻译成中文，术语要保留英文原文。",
+      "expected_behavior": "不应调用本 skill，理由：翻译任务，与 API 过滤器无关。",
+      "notes": "无关但贴近领域的请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我要找的区域范围内估计就二三十根轴对齐的正交柱，这种情况还要分两段先 bbox 再复核吗？",
+      "expected_behavior": "应激活本 skill 并触发判停条件：目标全是轴对齐规则图元（bbox 与实际几何紧贴），bbox 结果直接可用，跳过几何复核步骤。",
+      "notes": "边界场景：规则几何免复核的豁免条件。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "候选图元一共就五根梁，但我要求结果必须绝对精确，是不是连 bbox 这一步都可以不要，直接上实体相交判断？",
+      "expected_behavior": "应激活本 skill 并按边界处理：候选集很小且要求几何级精确时，直接用 ElementIntersects* 过滤器即可，不必先走 bbox——bbox 快筛的价值在于大集合缩圈（具体使用细节交 revit-intersects-filter-decisions）。",
+      "notes": "边界场景：小集合高精度需求下'bbox 先行'不再必要，本 skill B 段明确排除项。"
+    }
+  ]
+}

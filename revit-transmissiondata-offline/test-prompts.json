@@ -1,0 +1,62 @@
+{
+  "skill": "revit-transmissiondata-offline",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "服务器换了之后，成百上千个 rvt 文件的链接路径全失效了，能不能不启动 Revit 批量把链接重定向到新路径？",
+      "expected_behavior": "激活后应给出 ReadTransmissionData 读引用 → 改路径 → WriteTransmissionData 写回并设 IsTransmitted 的离线批量流程。",
+      "notes": "A2 场景 1，本体"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "交付归档前要把一批文件里所有 CAD 链接都设成不加载，有没有不开文件就批量处理的办法？",
+      "expected_behavior": "激活后应说明用 TransmissionData 离线修改引用加载状态实现批量卸载，并提醒只处理顶层链接。",
+      "notes": "A2 场景 2"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "后台脚本跑在没有装 Revit 的机器上，要查询一批文件的链接清单和加载状态，怎么做？",
+      "expected_behavior": "激活后应说明 TransmissionData 读取的是文件内嵌的上次保存时引用数据，可在不启动 Revit 的环境查询。",
+      "notes": "A2 场景 3"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "当前打开的这个文档里，我想把一个链接卸载掉再换个路径重新加载。",
+      "expected_behavior": "不应调用本 skill，理由：文档已打开、可交互操作时应直接用打开文档的链接 API（revit-link-decision-flow），离线方式是绕路。",
+      "notes": "跨 skill 混淆诱饵：离线 vs 在线"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "怎么列出当前文档里所有的外部文件引用做个审计？",
+      "expected_behavior": "不应调用本 skill，理由：查询已打开文档的引用容器用 ExternalFileUtils（revit-external-file-reference-utils），本 skill 是未打开文件的离线读写。",
+      "notes": "混淆诱饵：数据来源对立"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "办出国签证都需要准备哪些材料？",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 完全无关的签证咨询。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "能不能用离线方式给这批文件直接新增一个链接，或者把某个引用删掉？",
+      "expected_behavior": "不应调用本 skill 的增删用法，理由：TransmissionData 只能修改现有引用的路径与加载状态，做不到新增或删除引用本身。",
+      "notes": "边界：只能改不能增删"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我改完路径了，但下次打开文件链接还是找不到，是不是 API 有问题？",
+      "expected_behavior": "激活本 skill 并排查边界：常见原因是忘记 WriteTransmissionData 写回、没设 IsTransmitted，或 PathType 选错（服务器路径仍设 Relative）。",
+      "notes": "边界：写回与 PathType 失败模式"
+    }
+  ]
+}

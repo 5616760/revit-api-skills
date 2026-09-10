@@ -1,0 +1,69 @@
+{
+  "skill": "revit-filtered-collector-three-steps",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "第一次写 Revit 检索代码，要找出文档里所有的门，整个流程怎么搭？是不是先建个收集器再往上加条件？",
+      "expected_behavior": "激活后按三步构建给骨架：new FilteredElementCollector(document) 构造（文档级范围）→ 叠加类别过滤器 → ToElements()/ToElementIds() 取结果，并说明结果只取一次存变量。",
+      "notes": "A2 场景1：第一次写'找出所有 XX'类代码需要搭检索骨架。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "需求是只处理当前平面视图里看得见的标注，我不想把别的视图的东西也捞进来，这个要怎么限定范围？",
+      "expected_behavior": "激活后选视图级构造 new FilteredElementCollector(document, view.Id)，并强制先调 IsViewValidForElementIteration(view) 校验、失败有降级方案。",
+      "notes": "A2 场景2：'当前视图可见'需求，视图级构造 + 校验。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我上一次过滤已经拿到一批 ElementId 了，现在想在这批里面再筛掉一些类型不符的，还要重新对全文档跑一遍吗？",
+      "expected_behavior": "激活后选 IdSet 构造 new FilteredElementCollector(document, idSet)，在已有候选名单内二次筛选，不重新全文档扫描。",
+      "notes": "A2 场景3：已有候选 Id 的二次筛选。"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "奇怪了，我的 collector 在三维视图里死活找不到标高，模型里明明有，是 API 出 bug 了吗？",
+      "expected_behavior": "激活后诊断构造函数选错范围：标高是基准图元多数视图不可见，视图级构造拿不到，应改用 Document 构造（文件级）。",
+      "notes": "A2 场景4：'collector 找不到'类 bug 回头检查构造函数。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我的收集器跑得特别慢，怀疑是直接上了一个按参数值过滤的过滤器，把每个图元都展开到内存里了，这个组合要怎么调？",
+      "expected_behavior": "不应调用本 skill，理由：用户骨架已就绪，讨论的是过滤器选 Quick 还是 Slow、怎么组合的性能策略，应触发 revit-filter-quick-slow-logical。",
+      "notes": "跨 skill 混淆诱饵：C 组邻居 revit-filter-quick-slow-logical 的触发面（ElementParameterFilter 性能、快慢组合）。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "在某个视图上第一次跑收集器卡了好几秒，第二次就快了，这是不是几何重建的代价？有没有预热之类的办法？",
+      "expected_behavior": "不应调用本 skill，理由：讨论的是视图级构造的行为差异与几何重建代价的深水区，应触发 revit-view-vs-document-collector。",
+      "notes": "跨 skill 混淆诱饵：C 组邻居 revit-view-vs-document-collector 的触发面（首次几何重建、预热）。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "帮我把这份 Word 里的会议纪要整理成一封中文邮件发给项目组。",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 检索完全无关的通用办公请求。",
+      "notes": "完全无关的通用请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我就一个图元的 ID，想把它对应的对象取出来，也要先 new 一个 collector 吗？",
+      "expected_behavior": "不应调用本 skill 做骨架搭建，理由：已知单对象直接 Document.GetElement() 即可，构造 collector 是入口错配；此情况应让四入口决策层处理而非本 skill。",
+      "notes": "边界场景：单已知对象的 GetElement 路径不属于三步构建（本 skill B 段明确排除项）。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我要统计全项目的房间，但用户可能手动隐藏过一些房间，我该用视图级还是文档级？",
+      "expected_behavior": "应激活本 skill 并触发判停条件：目标图元可能不可见（被隐藏），禁止选 View 构造，强制回到 Document 构造，保证统计不受当前视图状态影响。",
+      "notes": "边界场景：隐藏图元与视图级构造的语义冲突，落在三步构建步骤1的判停条件上（与视图级差异深水区 skill 亦有衔接，但骨架选型由本 skill 裁决）。"
+    }
+  ]
+}

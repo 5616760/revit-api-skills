@@ -1,0 +1,62 @@
+{
+  "skill": "revit-compound-structure-layers",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "改了一个墙类型的保温层厚度，全楼的墙都跟着变了，怎么才能只改一面的墙？",
+      "expected_behavior": "说明类型级等于全局级的语义，先 ElementType.Duplicate() 复制出新 HostObjAttributes，在副本上 GetLayers 修改后 SetCompoundStructure 写回，再赋给目标实例。",
+      "notes": "正面场景：类型级修改的隔离。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "要读一个墙类型的构造做法，每一层的材料、厚度和功能都列出来。",
+      "expected_behavior": "从 HostObjAttributes 取 CompoundStructure，GetLayers() 读出层数组，逐层输出材料、宽度、Function。",
+      "notes": "正面场景：读取层结构。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "遍历层的时候读到 MaterialId 是 -1，是不是数据坏了要报错？",
+      "expected_behavior": "说明 MaterialId=-1 表示材料与类别相关，不是错误值；应按层的 Function 取类别默认材料而非报错。",
+      "notes": "正面场景：特殊编码值的正确解读。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "把墙的定位线从中心线改成核心面内部，墙会移动多少？",
+      "expected_behavior": "不应调用本 skill，理由：这是墙定位线档位与位移计算问题（WALL_KEY_REF_PARAM），应激活墙定位线 skill；本 skill 的 GetOffsetForLocationLine 只是配套接口。",
+      "notes": "混淆诱饵：层结构 vs 定位线档位。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "建异形轮廓墙的时候要指定法向，用哪个创建方法？",
+      "expected_behavior": "不应调用本 skill，理由：这是墙创建重载选择问题，应激活墙创建重载 skill。",
+      "notes": "混淆诱饵：层结构读取 vs 创建重载。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "用 PS 怎么把图片背景抠掉？",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 开发完全无关的图像处理请求。",
+      "notes": "完全无关请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "垂直复合墙的层读出来好像缺了几行，按普通墙处理对吗？",
+      "expected_behavior": "边界判别：IsVerticallyCompound 的墙需要不同的层处理路径，按普通墙处理会漏层；应先判断是否垂直复合再选路径。",
+      "notes": "边界场景：垂直复合墙的特殊路径。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我想改的是某一堵墙的外观颜色，不是它的构造层，也走复合结构吗？",
+      "expected_behavior": "边界判别：改单个实例的外观材质是实例参数或外观参数范畴，不是复合结构层操作；复合结构管的是类型级的构造层定义，两者对象层级不同。",
+      "notes": "边界场景：结构层 vs 实例外观的层级区分。"
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "skill": "revit-regenerate-failure-rollback",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "doc.Regenerate() 抛了 RegenerationFailedException，我 catch 之后没有回滚事务继续跑，模型里出现了半截墙和不完整的连接，怎么处理才对？",
+      "expected_behavior": "应指出 RegenerationFailedException 意味着重生成失败、文档处于'半完成'的不一致状态；正确处理是 catch 后立即 transaction.RollBack()（回滚当前事务或子事务），丢弃该事务的全部修改使文档恢复一致，绝不能带着半完成状态继续操作或提交。",
+      "notes": "核心场景：重生成失败后必须回滚"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "事务 Commit 的时候 Revit 会自动重生成，如果提交时这次自动重生成失败了会怎样？我也需要回滚吗？",
+      "expected_behavior": "应说明 Commit 内含自动重生成，若该重生成失败则提交同样失败，事务修改未被接受；此时仍应显式 RollBack() 收尾事务（释放事务对象、恢复一致状态），不要假设'提交失败=已自动清理'。",
+      "notes": "核心场景：提交时自动重生成失败"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "RegenerationFailedException 和普通的 Autodesk.Revit.Exceptions.Exception 在处理上有什么本质区别？我能不能 catch 之后吞掉继续执行？",
+      "expected_behavior": "应辨析：普通异常可能只是单个 API 调用失败、文档状态未必破坏；RegenerationFailedException 则表示文档一致性已破坏（半完成状态），吞掉继续执行会基于损坏状态工作，后续行为不可预测。处理纪律是：捕获→回滚当前事务→返回失败，而非恢复执行。",
+      "notes": "核心场景：异常语义区别与处理纪律"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "回滚事务之后 Revit 还是弹警告对话框，我想让回滚后把警告清空、批量事务的警告延迟到末尾统一处理，怎么配置？",
+      "expected_behavior": "不应激活本 skill。警告清理与延迟提示属于事务故障处理配置（FailureHandlingOptions 的 SetClearAfterRollback / SetDelayedMiniWarnings，见 revit-failure-options-get-set）。本 skill 只讲重生成失败后的回滚纪律。",
+      "notes": "跨 skill 混淆诱饵：failure-options-get-set"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我的脚本循环里调用了很多次 Regenerate，整体跑得很慢，想优化重生成的调用频率。",
+      "expected_behavior": "不应激活本 skill。重生成调用频率与性能优化属于 revit-regenerate-cost（合并大事务、利用提交时自动重生成）。本 skill 处理失败路径，不处理性能路径。",
+      "notes": "跨 skill 混淆诱饵：regenerate-cost"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "重生成失败时我事务里前半段修改是好的，能不能只回滚后半段、保留前半段提交？",
+      "expected_behavior": "应说明半完成状态下文档一致性已破坏，试图'保留好的部分'不可靠；若前半段确实有 SubTransaction 边界，可以回滚到该子事务边界恢复一致，但一般纪律是回滚整个事务重来，把'分段可保留'视为需要提前规划子事务的设计而非事后补救。",
+      "notes": "边界：部分保留的可行性"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我在做临时事务分析（假设修改后 Regenerate 再回滚），如果重生成失败了，还需要专门 RollBack 吗？反正本来就打算回滚。",
+      "expected_behavior": "应确认需要：异常路径下事务仍处于打开（半完成）状态，必须显式 RollBack 收尾，不能因为'本来就要回滚'而省略；临时事务分析与失败回滚纪律在此交汇（与 revit-temporary-transaction-analysis 衔接）。",
+      "notes": "边界：临时事务场景下的失败路径"
+    }
+  ]
+}

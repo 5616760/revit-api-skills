@@ -1,0 +1,55 @@
+{
+  "skill": "revit-command-result-undo",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "Execute 返回 Result.Failed 的话，我这个命令之前对模型做的修改会被撤销吗？还是得自己写回滚代码？",
+      "expected_behavior": "给出表 1-2 三态语义：Succeeded 保留全部修改；Failed 自动逆转命令期间对模型的一切更改并弹 Error 对话框；Cancelled 同样自动逆转一切更改但弹 Warning 对话框；Automatic 事务模式下返回值直接驱动回滚，不需要手动写撤销代码。",
+      "notes": "正面场景：Failed 是否自动撤销的核心问题"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我的命令批量修改图元，改到第 3 个的时候失败了，前面 2 个已经改了，怎么保证模型不留半成品？",
+      "expected_behavior": "说明一致性由返回值保证：失败路径返回 Result.Failed（或抛异常最终以 Failed 结束），Automatic 模式下 Revit 把本次 Execute 里所有 Create/Set/Delete 一并回滚——\"改了 5 个图元第 3 个失败\"不会残留半成品；写参数前可加守卫 if (parameter != null && !parameter.IsReadOnly)。",
+      "notes": "正面场景：批量修改中途失败的一致性"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "Result 枚举里的 Cancelled 什么时候用？它和 Failed 的区别是不是只是叫法不同？",
+      "expected_behavior": "区分语义：两者都含自动逆转更改，区别在对话框类型和语义——Failed=没干成（弹 Error），Cancelled=用户中途退出（弹 Warning，语气更轻）；用户取消操作的场景应返回 Cancelled 而不是误用为\"返回失败\"。",
+      "notes": "正面场景：Cancelled 与 Failed 的区分"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我的命令需要在失败时保留一部分已提交的修改、只回滚后半段，Transaction 和 SubTransaction 该怎么分层组织？",
+      "expected_behavior": "不应激活本 skill。Manual 模式下的精细事务控制（部分提交、SubTransaction 回滚）是事务专题，应走 revit-transaction-hierarchy（Transaction/SubTransaction/TransactionGroup 三件套分层）。本 skill 只管返回值语义与 Automatic 回滚，精细控制是明确排除项。",
+      "notes": "跨 skill 混淆诱饵：手动分层事务 vs 返回值免写方案"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "Execute 方法的三个参数 commandData、message、elements 分别是干什么用的？message 参数怎么写用户才能看到？",
+      "expected_behavior": "不应激活本 skill。Execute 三参数的分工是另一专题，应走 revit-execute-parameter-semantics。本 skill 讲 Result 返回值（决定\"改不改得留\"），message 决定\"怎么告诉用户\"，两个 skill 互补但不重叠。",
+      "notes": "跨 skill 混淆诱饵：Execute 三参数语义 vs Result 返回值"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我用的是 TransactionMode.Manual，事务 Commit 之后才返回 Failed，发现有些修改还留在模型里，不是说好自动回滚吗？",
+      "expected_behavior": "解释模式差异：\"返回值驱动事务\"在 Automatic 模式下最强；Manual 模式下事务由你管理，返回 Failed 仍会触发外部事务组兜底回滚，但已提交过的子事务可能残留——Manual 模式忘记 RollBack 却返回 Failed 是书中警告的失败模式；排查代码中未回滚的事务，精细控制指路事务专题。",
+      "notes": "边界情形：Manual 模式下回滚不完全"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我的命令所有分支最后都 return Result.Succeeded，中途异常也被 catch 吞掉了，这样写有什么风险？",
+      "expected_behavior": "指出失败模式：所有路径都返回 Succeeded → 中途失败也被当成功，半成品修改被保留（Automatic 下不触发回滚）；异常被吞后应返回 Failed 或让异常冒泡到返回值机制兜底；建议故意让命令在第 N 个图元处失败，验证模型无任何残留修改。",
+      "notes": "边界情形：吞异常 + 全返回 Succeeded 的隐患"
+    }
+  ]
+}

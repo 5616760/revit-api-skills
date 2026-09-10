@@ -1,0 +1,69 @@
+{
+  "skill": "revit-element-move-decision",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我要写一个命令把选中的一批门窗整体挪 3 米，用 ElementTransformUtils.MoveElement 在循环里一个一个移可以吗？还是有什么更好的做法？",
+      "expected_behavior": "指出批量平移的标准入口是 MoveElements(document, idCollection, translationVector)，一次事务里移动整组图元，比循环调用 MoveElement 更干净；强调平移向量是偏移量（目标位置减当前位置），不是目标坐标。",
+      "notes": "正面场景：批量平移选 MoveElements"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我想把一面墙移动到新位置的同时改变长度，试了 MoveElement 只能把墙整体平移，改不了形状，这种情况该用哪个 API？",
+      "expected_behavior": "指出 MoveElement 只能平移不改变形状；\"移动+变形\"的复合需求要走 Location 路径：获取墙的 LocationCurve，把 Curve 属性赋值为新的 Line/Arc，一次定义新位置和新几何，位置与长度同时更新。",
+      "notes": "正面场景：移动墙并改长度走 LocationCurve.Curve"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "怎么用 API 把一根柱精确放到指定坐标点上？柱是点驱动的图元，是不是直接赋值 LocationPoint.Point 就行？",
+      "expected_behavior": "确认点驱动图元（柱、房间、组）精确定位走 LocationPoint.Point 赋值；建议移动后读回 Location 验证位置，尤其 Z 分量是否符合预期。",
+      "notes": "正面场景：点图元精确定位走 LocationPoint.Point"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "MoveElement(Document, ElementId, XYZ) 的第三个参数 XYZ，我传目标点坐标过去，图元跑到的位置很奇怪，是不是这个向量的语义我理解错了？",
+      "expected_behavior": "指出 XYZ 参数是平移向量（偏移量）而非目标坐标：传入目标坐标会导致图元从当前位置再偏移一遍；正确算法是 目标位置 - 当前位置；建议移动后读回 Location 验证。",
+      "notes": "正面场景：平移向量被当目标坐标的经典错误"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我用 ElementTransformUtils.MoveElement 把一根基于标高 1 的柱移到 (10,20,30)，结果柱落在 (10,20,0)，Z 分量好像被忽略了一样，也没报错，这是怎么回事？",
+      "expected_behavior": "不应激活本 skill 作为主答。该问题属于 MoveElement 对基于标高图元静默忽略 Z 分量的专项陷阱，应走 revit-moveelement-z-coordinate-trap：标高图元不能跨标高移动，改高度只能改 Base/Top Level 参数或偏移。本 skill 是三条移动路径的总决策树，Z 陷阱只在其禁忌处点到。",
+      "notes": "跨 skill 混淆诱饵：Z 坐标陷阱 vs 移动路径决策"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我想在移动这些梁的同时保留原来位置的副本，ElementTransformUtils 里有没有又能挪又保留原件的方法？",
+      "expected_behavior": "不应激活本 skill。需求语义是复制（保留原件）而非移动，应走 revit-element-copy-decision：按目标域（同文档/跨文档/跨视图/变换复制）选择 CopyElement 等复制 API。本 skill 只管移动，MoveElement 是原件离开原位，CopyElement 才保留原件。",
+      "notes": "跨 skill 混淆诱饵：复制需求 vs 移动决策"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "拿到一个图元后我不知道怎么判断它的位置是曲线驱动还是点驱动，Location 对象向下转型该转成哪个？",
+      "expected_behavior": "不应激活本 skill。该问题是图元位置驱动类型的判型问题，应走 revit-location-type-decision：先判 Location 的四分类型（LocationCurve / LocationPoint / 仅基类 / 无 Location），定型结果是本 skill 移动路径选择的分支依据。",
+      "notes": "跨 skill 混淆诱饵：位置类型判型 vs 移动路径选择"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我的批量移动脚本里有一批图元死活不动，也没异常，循环里用的是 MoveElements，会不会是图元被锁了？",
+      "expected_behavior": "指出被钉住的图元（Pinned = true）不能移动，是\"静默不动\"的来源之一：移动前检查并置 element.Pinned = false；同时建议移动后读回 Location 验证，排查是否有标高图元的 Z 分量被静默忽略（后者细节可转 revit-moveelement-z-coordinate-trap）。",
+      "notes": "边界情形：Pinned 静默失败与移动决策树的禁忌项交叉"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "需求是把一批柱从首层挪到二层的对应平面位置上，我打算用 MoveElements 传一个带 Z 的向量一步到位，这样行吗？",
+      "expected_behavior": "指出该方案对基于标高的柱不可行：MoveElements 的 Z 分量对标高图元被静默忽略；正确做法是拆成两步——平面位移走 MoveElements（只用 X/Y），换层走 Base/Top Level 参数与偏移；图元高度本质上由标高参数管理，移动 API 帮不上。",
+      "notes": "边界情形：跨标高需求撞上决策树判停条件"
+    }
+  ]
+}

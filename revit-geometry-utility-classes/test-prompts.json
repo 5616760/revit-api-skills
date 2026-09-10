@@ -1,0 +1,62 @@
+{
+  "skill": "revit-geometry-utility-classes",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "做日照分析要拿墙的外表面，有没有不用遍历 Solid 再判断朝向的快捷办法？",
+      "expected_behavior": "归类为取复合主体特定面任务，给出 HostObjectUtils.GetSideFaces(wall, ShellLayerType.Exterior) 直接返回 Reference 集合。",
+      "notes": "正面场景：取面用工具类而非手工遍历。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "要算每个房间的几何面积，还要知道边界是哪些墙、各是什么材质。",
+      "expected_behavior": "归类为空间几何计算任务，用 SpatialElementGeometryCalculator 计算空间几何并取边界图元关系，注意复用单实例（内部缓存）。",
+      "notes": "正面场景：房间几何与边界图元。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "梁和柱的连接顺序需要程序化地调整和管理。",
+      "expected_behavior": "归类为连接管理任务，给出 JoinGeometryUtils 的连接/拆解与连接顺序维护方法，并说明连接顺序改变会连锁影响连接处几何。",
+      "notes": "正面场景：连接顺序程序化管理。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "要拿到构件任意面的完整集合，一个不落。",
+      "expected_behavior": "不应调用本 skill，理由：工具类只定位特定面（外/内表面），任意面完整集合仍需走通用几何树遍历，应激活几何提取流程 skill。",
+      "notes": "混淆诱饵：特定面快捷路径 vs 全量遍历。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "从某个观察点看过去，这个方向上最近的构件是谁？",
+      "expected_behavior": "不应调用本 skill，理由：这是光线投影/最近命中查询需求，应激活 ReferenceIntersector 相关 skill 而非几何工具类。",
+      "notes": "混淆诱饵：取面工具 vs 投影查命中。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "Python 里 list 和 tuple 到底该怎么选？",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 完全无关的编程语言基础问题。",
+      "notes": "完全无关请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我要操作的对象在族文件里面，能用这些工具类吗？",
+      "expected_behavior": "边界判别：这些几何实用工具类不适用于族文件，判停并改走几何遍历路径；用户若在族文档上下文中提问需明确告知此硬约束。",
+      "notes": "边界场景：族文件的适用性硬约束。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "反复算不同房间的几何，每次都 new 一个计算器会不会太浪费？",
+      "expected_behavior": "边界判别：SpatialElementGeometryCalculator 有内部缓存应复用单实例，反复新建浪费性能；同时注意文件更改后缓存自动失效需重新计算，不是 bug。",
+      "notes": "边界场景：缓存实例的复用语义。"
+    }
+  ]
+}

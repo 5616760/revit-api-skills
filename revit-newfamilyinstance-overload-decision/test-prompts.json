@@ -1,0 +1,55 @@
+{
+  "skill": "revit-newfamilyinstance-overload-decision",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "NewFamilyInstance 一堆重载，放一扇门应该用哪个？要传墙进去吗？",
+      "expected_behavior": "激活后应按五维决策空间选型：门窗是'嵌入主体+基于标高'双维度构件，用带 wall(host)+level 的重载。",
+      "notes": "正面场景：放置门的重载选择"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "桌子创建成功了但在 3D 视图里显示位置很奇怪，代码也没报错",
+      "expected_behavior": "激活后应诊断重载选错是静默显示错误而非异常：桌子不是基于标高的构件，应换无 level 的重载。",
+      "notes": "正面场景：静默显示错误排查"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "创建实例直接抛异常说符号没找到，是加载的问题还是重载的问题？",
+      "expected_behavior": "激活后应区分两类失败模式：符号未加载抛异常（先 LoadFamily/LoadFamilySymbol 确认）；重载选错不抛异常只显示不对。",
+      "notes": "正面场景：两类失败模式分诊"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "基于面的灯具族要怎么放置？重载里带 Face 的那种怎么用？",
+      "expected_behavior": "激活后应指导基于面的构件用带 Face/Reference 的重载，如幕墙嵌板、面装灯具。",
+      "notes": "正面场景：基于面族放置"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "要一次性放 1000 根同类型柱子，循环里逐个 NewFamilyInstance 太慢了",
+      "expected_behavior": "不应调用本 skill，理由：批量创建同类型大量实例属于 revit-newfamilyinstances-batch-create 的触发面（FamilyInstanceCreationData 集合 + 一次 NewFamilyInstances），本 skill 负责单个实例的重载选择。",
+      "notes": "跨 skill 混淆诱饵：批量创建 vs 单实例重载"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "怎么把 Revit 模型导出成 glTF 格式？",
+      "expected_behavior": "不应调用本 skill，理由：模型导出格式问题与 NewFamilyInstance 重载决策无关，属于导出类 skill 的范围。",
+      "notes": "跨领域无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我按 UI 里'放置构件'的方式传了个 Level 进去，3D 显示还是不对，参数都对啊",
+      "expected_behavior": "激活后应坚持边界判断：显示异常优先怀疑重载维度（该构件是否基于标高/是否需要宿主）而非几何参数数值——重载选错不抛异常，是最容易被忽视的静默失败。",
+      "notes": "边界：参数正确但重载维度错误的静默失败"
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "skill": "revit-room-volume-enable",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "写容积统计工具时 room.Volume 读出来全是 0，面积明明有值，我代码哪里错了？",
+      "expected_behavior": "识别为文档级设置问题而非代码错误：体积计算默认关闭，须设置 VolumeCalculationOptions.VolumeComputationEnable = true 赋给 doc.Settings.VolumeCalculationSetting 后再读。",
+      "notes": "正面场景：Volume 返回 0 的诊断（A2 场景 1/4）。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "想在程序里帮用户打开\"面积和体积计算\"这个设置，对应 API 是什么？",
+      "expected_behavior": "给出开启路径：new VolumeCalculationOptions { VolumeComputationEnable = true } 赋给 doc.Settings.VolumeCalculationSetting.VolumeCalculationOptions，对齐 UI 设置。",
+      "notes": "正面场景：程序化开启体积计算（A2 场景 2）。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "怎么判断某个设备图元是不是位于房间内部？听说房间有个闭合壳的概念可以用？",
+      "expected_behavior": "介绍 ClosedShell（开敞空间边界形成的闭合壳）做几何包含判断，无需自己构造房间实体几何；这是体积体系下的副产品。",
+      "notes": "正面场景：ClosedShell 包含检查（A2 场景 3）。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "创建房间之后马上读边界段读不到新墙产生的边界，要等什么时机？",
+      "expected_behavior": "不应调用本 skill，理由：边界段更新时序属于 revit-room-creation-boundary（平面创建与边界检索）；本 skill 只讲体积计算开关这一个三维问题。",
+      "notes": "跨 skill 混淆诱饵：边界时序 vs 体积开关。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "帮我写一个 WPF 窗体，上面放个下拉框选楼层。",
+      "expected_behavior": "不应调用本 skill，理由：界面开发与房间体积计算无关。",
+      "notes": "完全无关的通用请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "房间显示\"垂直无界\"是什么意思？跟 UpperLimit 这些高度设置有关吗？",
+      "expected_behavior": "属本 skill 配套内容：说明 ClosedShell 与房间垂直无界的检查关系，以及高度控制走 BaseOffset/LimitOffset/UpperLimit；无界房间的高度边界决定体积是否有效。agent 应把高度控制纳入体积体系解释。",
+      "notes": "边界场景：体积与高度控制的关联。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "开启体积计算这个设置对整个文档有什么影响？是不是所有项目都该默认开着？",
+      "expected_behavior": "说明这是文档级全局设置而非单房间开关，开启后全文档体积重算；agent 应指出设置的作用范围（文档级）与按需启用的权衡，而不是只给开启代码。",
+      "notes": "边界场景：全局设置的作用面与副作用。"
+    }
+  ]
+}

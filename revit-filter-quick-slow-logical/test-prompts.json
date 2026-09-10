@@ -1,0 +1,69 @@
+{
+  "skill": "revit-filter-quick-slow-logical",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我想找出所有面积大于 100 平米的房间，准备直接用 ElementParameterFilter 加上去，这样写有没有问题？",
+      "expected_behavior": "激活后指出 ElementParameterFilter 是 SlowFilter 不能单独用，标准结构是先用 QuickFilter（如 ElementClassFilter(typeof(Room)) + WhereElementIsNotElementType()）缩圈再叠参数过滤器精筛。",
+      "notes": "A2 场景1：按参数值过滤，正准备直接上 ElementParameterFilter。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "collector 在大模型上跑一次要十几秒，我怀疑过滤器的组合方式不对，怎么排查？",
+      "expected_behavior": "激活后诊断过滤器链是否'只有 SlowFilter 或全 SlowFilter'结构，要求至少有一个 QuickFilter 先行大幅缩圈，SlowFilter 只做最后精筛。",
+      "notes": "A2 场景2：collector 慢，怀疑过滤器组合不当。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我想要所有不是房间的图元，能不能给 RoomFilter 套一个 Not 直接取反？",
+      "expected_behavior": "激活后先校验反转合法性：RoomFilter 不可反转，对它施加 Not 会失败，应改用 ExclusionFilter 或补集思路间接实现。",
+      "notes": "A2 场景3：取反需求撞上不可反转过滤器。"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "模型大概有八十万个图元，我要在这上面写检索，过滤层级应该怎么设计才能不把性能拖垮？",
+      "expected_behavior": "激活后给每个目标过滤器标注 Quick/Slow/Logical 类别，设计'类别级 Quick 先行大幅缩圈 + Slow 只做精筛'的过滤层级控制成本。",
+      "notes": "A2 场景4：大型模型上预先设计过滤层级。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我过滤只跑了一次，但代码里对同一个 collector 调了好几次 ToElements()，先 Count 再遍历，越跑越慢，这是为什么？",
+      "expected_behavior": "不应调用本 skill，理由：慢的原因是结果物化维度（collector 不缓存、多次调用重新过滤），不是过滤器执行维度，应触发 revit-collector-result-retrieval。",
+      "notes": "跨 skill 混淆诱饵：C 组邻居 revit-collector-result-retrieval 的触发面（结果复用、ToElements 重复调用）。skill 的 B 段明确警告两个性能维度不要混为一谈。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我用 BoundingBoxIntersectsFilter 找和某区域相交的墙，结果一堆斜墙混进来了其实根本不相交，怎么回事？",
+      "expected_behavior": "不应调用本 skill，理由：讨论的是 bbox 家族的具体行为（旋转元素误报）与两段式复核，应触发 revit-boundingbox-filter-tradeoffs。",
+      "notes": "跨 skill 混淆诱饵：C 组邻居 revit-boundingbox-filter-tradeoffs 的触发面（bbox 误报、false positives）。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "Revit 的族文件后缀是 .rfa 吗？我想确认一下文件格式。",
+      "expected_behavior": "不应调用本 skill，理由：与过滤器策略无关的 Revit 概念性问答。",
+      "notes": "无关但贴近领域的概念问题。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我先用 IdSet 构造把候选缩到三十几个图元了，这时候再单独用一个 SlowFilter 判断参数，还要不要再补一个 QuickFilter？",
+      "expected_behavior": "应激活本 skill 并触发判停条件：目标集合已极小（IdSet 构造的几十个候选），SlowFilter 单独使用可接受，跳过补 QuickFilter 的要求。",
+      "notes": "边界场景：小候选集下'必须配 QuickFilter'规则的豁免条件。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我就想用一个类别过滤器拿到所有的墙，一个 OfClass 就够了，也要走一遍三类策略分析吗？",
+      "expected_behavior": "不应调用本 skill，理由：单一类别过滤器的具体用法直接看 API 即可，不必做全链路策略设计（本 skill B 段明确排除项）。",
+      "notes": "边界场景：简单单过滤器需求不值得触发策略框架。"
+    }
+  ]
+}

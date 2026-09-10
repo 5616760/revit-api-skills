@@ -1,0 +1,62 @@
+{
+  "skill": "revit-transaction-hierarchy",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我批量创建一千根结构梁，现在每根梁单独开一个 Transaction 提交，用户按 Ctrl+Z 要撤销一千次，怎么让整个批次只产生一条撤销记录？",
+      "expected_behavior": "应指出用 TransactionGroup 包裹多个 Transaction：组内逐个提交子事务，最后调用 group.Assimilate() 把组内所有事务合并为单一撤销记录（合并撤销历史）；若要整体丢弃则 RollBack()。解释三层事务的层级关系：TransactionGroup 组合 Transaction，Transaction 内可含 SubTransaction。",
+      "notes": "核心场景：批量操作合并撤销（Assimilate）"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "Transaction、SubTransaction、TransactionGroup 这三种事务类型到底有什么区别？我在什么情况下该用哪一层？",
+      "expected_behavior": "应给出三层结构分工：Transaction 是修改模型的基本单元，提交产生撤销记录；SubTransaction 在事务内分段提交产生中间状态（配合 Regenerate），不产生独立撤销记录，必须由外层 Transaction 包裹；TransactionGroup 把多个 Transaction 组成一个逻辑整体，Assimilate() 合并撤销历史、RollBack() 整体回退。",
+      "notes": "核心场景：三层事务结构选型"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我在一个 Transaction 里先移动墙体，想立刻查看中间状态的模型再决定后续操作，用 SubTransaction 提交一段修改可以吗？",
+      "expected_behavior": "应确认可以：SubTransaction.Commit() 提交中间状态供查看，之后可 RollBack() 撤销该段；强调子事务不能脱离外层 Transaction 独立存在，最终撤销记录仍归并到外层事务。",
+      "notes": "核心场景：子事务分段"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "我在一个 Transaction 还没提交的时候又 new 了另一个 Transaction 并 Start，Revit 直接报错不允许，事务不能嵌套吗？",
+      "expected_behavior": "应说明 Transaction 之间禁止嵌套：一个时刻只能有一个打开的 Transaction；需要嵌套效果时用 TransactionGroup 套 Transaction，或在外层事务内用 SubTransaction 分段；嵌套事务的写法本身在 API 层面就被拒绝。",
+      "notes": "核心场景：嵌套事务禁止"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我在非模态对话框的按钮回调里 new Transaction 然后 Start，抛了 InvalidOperationException，这是线程问题还是事务用法问题？",
+      "expected_behavior": "不应激活本 skill。这是事务的调用上下文（线程/API 上下文）问题而非事务层级结构问题，应走 revit-transaction-off-thread / revit-transaction-thread-context：非模态回调不在 Revit API 上下文中，修复方案是 IExternalEventHandler + ExternalEvent.Raise()。",
+      "notes": "跨 skill 混淆诱饵：off-thread/thread-context"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我调用 doc.Regenerate() 抛了 RegenerationFailedException，文档好像处于不一致状态，接下来该怎么处理这个事务？",
+      "expected_behavior": "不应激活本 skill。重生成失败后的回滚处理属于 revit-regenerate-failure-rollback：必须立即回滚当前事务丢弃半完成修改。本 skill 只讲事务层级结构，不讲重生成失败处理。",
+      "notes": "跨 skill 混淆诱饵：regenerate-failure-rollback"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "TransactionGroup 什么时候用 Assimilate() 收尾，什么时候用 RollBack() 收尾？用 Assimilate 之后组内已提交的事务撤销记录会怎样？",
+      "expected_behavior": "应区分两种收尾语义：Assimilate() 保留组内所有修改并把多个撤销记录合并为一条（用户一次撤销全部回退）；RollBack() 则丢弃组内全部修改（包括已提交的子事务）。选择依据是'要保留修改但合并撤销'还是'整体作废'。",
+      "notes": "边界：两种收尾方式的语义选择"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我想先在临时事务里做假设分析（删图元看效果再回滚），事务组在这种场景里扮演什么角色？",
+      "expected_behavior": "应指出临时事务分析（Start→修改→Regenerate→RollBack）本身用单个 Transaction 即可完成，事务层级结构知识可作为背景补充；若需要'保留一段假设、丢弃另一段'的复杂组合，可用 TransactionGroup + 多 Transaction 分段控制，但典型假设分析不需要。应引导识别用户真实需求，必要时指路 revit-temporary-transaction-analysis。",
+      "notes": "边界：与临时事务分析 skill 的交界"
+    }
+  ]
+}

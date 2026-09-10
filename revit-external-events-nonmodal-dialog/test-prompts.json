@@ -1,0 +1,55 @@
+{
+  "skill": "revit-external-events-nonmodal-dialog",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我的非模态 WPF 窗体上有个按钮，点击要修改 Revit 模型，听说要用 ExternalEvent，完整流程怎么写？",
+      "expected_behavior": "应给出四步模板：1) 实现 IExternalEventHandler，在 Execute 方法内开事务修改模型；2) ExternalEvent.Create(handler) 创建事件实例（保存引用，创建一次复用）；3) 窗体按钮的 Click 处理器里只调 _externalEvent.Raise()，不做任何模型操作；4) 窗体关闭（OnFormClosed/Closed）时 Dispose 该 ExternalEvent。模态对话框可直接调 API，非模态必须走 Raise。",
+      "notes": "核心场景：非模态对话框四步模板"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我调了 externalEvent.Raise() 之后马上读模型数据，读到的还是旧值，Execute 什么时候才执行？",
+      "expected_behavior": "应说明 Raise() 是排队通知：Execute 由 Revit 在回到 API 上下文的合适时机（如下一个空闲点）调度执行，调用后立即读取拿不到结果；依赖结果的后续逻辑应放进 Execute 内部或由 Execute 完成后的下一次交互处理。",
+      "notes": "核心场景：Raise 的异步排队语义"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我的窗体关闭之后 ExternalEvent 实例没释放，按钮逻辑里还留着 handler 引用，会不会有泄漏或异常风险？应该在哪里清理？",
+      "expected_behavior": "应指出清理纪律：窗体关闭事件（OnFormClosed/Closed）中 Dispose ExternalEvent，并断开对 handler 的引用；不释放会残留可 Raise 的事件对象与 handler 实例（泄漏），后续误 Raise 可能触发对已关窗体的回调异常。",
+      "notes": "核心场景：OnFormClosed Dispose 清理"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我想搞清楚为什么模态对话框里直接 new Transaction 没问题，非模态就抛异常，两种窗口执行上下文的原理差异是什么？",
+      "expected_behavior": "不应激活本 skill。模态/非模态上下文差异的原理分析属于 revit-transaction-thread-context。本 skill 提供非模态场景的解决方案模板（External Events 四步），默认该原理已知。",
+      "notes": "跨 skill 混淆诱饵：transaction-thread-context"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我在 Task.Run 后台线程里开事务修改模型抛了 InvalidOperationException，帮我诊断线程问题。",
+      "expected_behavior": "不应激活本 skill。后台线程开事务的反例诊断属于 revit-transaction-off-thread。本 skill 的场景固定为'非模态对话框按钮 → Raise'，其修复方案与线程专题重合但视角是窗体交互模板而非线程原理。",
+      "notes": "跨 skill 混淆诱饵：transaction-off-thread"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "既然 ExternalEvent 是正规机制，我在模态对话框里也统一用它来改模型，会不会更好更规范？",
+      "expected_behavior": "应说明没有必要：模态对话框本身处于 API 上下文内，可直接调用 API+事务，代码更简单直接；External Events 是为非模态场景设计的机制，模态里引入它只增加复杂度。选型判据是窗口模态性，不是'统一用高级机制'。",
+      "notes": "边界：模态场景不需要 ExternalEvent"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "ExternalEvent.Create 应该在什么时机调用？我在按钮 Click 里每次都 Create 一个新的行不行？",
+      "expected_behavior": "应指出 Create 时机纪律：创建一次（如窗体加载/插件初始化时）保存实例长期复用，按钮 Click 只 Raise；每次点击都 Create 会不断制造新事件对象，旧的没 Dispose 就是泄漏，且 Raise 的是哪个实例容易混乱。",
+      "notes": "边界：Create 一次复用"
+    }
+  ]
+}

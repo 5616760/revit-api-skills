@@ -1,0 +1,62 @@
+{
+  "skill": "revit-worksharing-api-decision-framework",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我要写一个批量修改工作共享文档图元的插件，检出、放弃所有权这套流程该怎么设计？",
+      "expected_behavior": "激活后应给出四步决策框架：检查 IsWorkshared → EnableWorksharing（如未启用）→ CheckoutElements/CheckoutWorksets 检出、RelinquishOwnership 放弃 → 可见性控制。",
+      "notes": "A2 场景 1，框架本体"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "检出和放弃的操作特别慢，是不是我调 API 的方式有问题？",
+      "expected_behavior": "激活后应指出多次小调用是性能塌方根源，检索/检出/放弃都要在一个大调用中批量做（如 500 个 ElementId 一次传入 CheckoutElements）。",
+      "notes": "A2 场景 2，批量性能原则"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "多人协作的时候修改总失败，说图元被别人持有，所有权流程要怎么走？",
+      "expected_behavior": "激活后应说明修改前必须检出、他人持有时操作失败的机制，并给出检出-修改-放弃的所有权流程设计。",
+      "notes": "A2 场景 3"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "后台服务要打开中心文件做批量检查，能不能只加载其中几个工作集省内存？",
+      "expected_behavior": "不应调用本 skill，理由：打开之时的加载范围控制是 revit-open-workshared-file（WorksetConfiguration）的职责，本 skill 管打开之后的所有权操作。",
+      "notes": "跨 skill 混淆诱饵：打开时 vs 打开后"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "插件要定时和中心模型做同步，中心被锁的时候程序一直挂着等，怎么办？",
+      "expected_behavior": "不应调用本 skill，理由：会话与中心的双向同步是 revit-synchronize-with-central 的领域（SynchLockCallback 等）。",
+      "notes": "混淆诱饵：所有权 vs 同步"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "帮我把这 30 张照片按拍摄日期重命名。",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit 工作共享完全无关的文件整理请求。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "这个文档是单机的没有共享，我改图元之前还要走检出流程吗？",
+      "expected_behavior": "不应调用本 skill，理由：IsWorkshared=false 是框架的退出信号，单机文档所有权概念不存在，直接操作即可。",
+      "notes": "边界：单机文档退出框架"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我在循环里一个个 CheckoutElements 检出 500 个图元，功能是通的，有没有隐患？",
+      "expected_behavior": "激活本 skill 并纠正边界：循环逐个小调用检出正是书中警告的性能塌方模式，应改为一次批量传入 ElementId 集合。",
+      "notes": "边界：能跑但违反批量原则"
+    }
+  ]
+}

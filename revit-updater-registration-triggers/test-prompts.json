@@ -1,0 +1,55 @@
+{
+  "skill": "revit-updater-registration-triggers",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我实现了 IUpdater 接口，RegisterUpdater 也调了，但修改墙的参数根本不触发 Execute，注册代码大概率缺了什么？",
+      "expected_behavior": "应指出注册两件套缺一不可：UpdaterRegistry.RegisterUpdater(updater, addInId)（建议在 OnStartup 中完成）之后，还必须 AddTrigger(updaterId, 过滤器, ChangeType) 为更新器添加触发器；只注册不加触发器（或触发器的过滤器没覆盖目标图元、ChangeType 不匹配）就不会触发。",
+      "notes": "核心场景：注册两件套"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "GetChangeTypeAny 到底监听什么？为什么我用它配触发器，新建图元和删除图元时 updater 反而不响应？",
+      "expected_behavior": "应说明 GetChangeTypeAny 只对'现有图元的修改'触发，不涵盖图元的新增和删除；要监听新增用元素添加类 ChangeType（GetChangeTypeElementAddition）、删除用元素删除类 ChangeType（GetChangeTypeElementDeletion），修改几何/参数各有对应 ChangeType。",
+      "notes": "核心场景：GetChangeTypeAny 的触发范围"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "RegisterUpdater 应该放在 OnStartup 里做还是放在命令 Execute 里做？各有什么后果？",
+      "expected_behavior": "应建议在 IExternalApplication.OnStartup 里注册（插件加载即生效，覆盖整个会话），并与其他生命周期工作一样注意 OnStartup/OnShutdown 配对（OnShutdown 注销 UnregisterUpdater）；在命令里临时注册会导致会话中途行为不一致、清理遗漏等问题。",
+      "notes": "核心场景：注册时机与生命周期配对"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我的 updater 触发没问题，但 Execute 里 new Transaction 提交修改被 Revit 拒绝了，修改该怎么组织？",
+      "expected_behavior": "不应激活本 skill。Execute 内的事务规则（禁开新 Transaction、直接修改并入原事务、可用 SubTransaction）属于 revit-iupdater-execute-transaction-rules。本 skill 只覆盖注册与触发器配置，发生在 Execute 之前。",
+      "notes": "跨 skill 混淆诱饵：iupdater-execute-transaction-rules"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我的更新器循环触发自己被 Revit 弹窗禁用了，怎么排查和防御这种故障？",
+      "expected_behavior": "不应激活本 skill。循环触发故障、冲突编辑、中心文件缺更新器三大故障模式与防御属于 revit-updater-failure-modes。本 skill 解决'不触发/触发配置'问题，该用户的问题是'触发太多'。",
+      "notes": "跨 skill 混淆诱饵：updater-failure-modes"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我只想监听结构柱类别图元的某个共享参数变化，ChangeType 和 ElementFilter 怎么组合才最精确？",
+      "expected_behavior": "应给出精确组合方式：过滤器收窄类别（如 ElementCategoryFilter(BuiltInCategory.OST_StructuralColumns)），ChangeType 用参数级（GetChangeTypeParameter 对应参数）而非 Any；触发器越精确，误触发和循环风险越小（这与故障防御的'触发器精确'原则一致）。",
+      "notes": "边界：触发器精确化配置"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我在 OnStartup 里 RegisterUpdater 了，但 OnShutdown 里忘了 UnregisterUpdater，会出什么问题？",
+      "expected_behavior": "应指出注册/注销要与生命周期配对：只注册不注销会在插件卸载/重载时产生重复注册或残留状态，重复加载插件可能触发注册冲突/重复更新；正确做法是 OnShutdown 中调用 UnregisterUpdater 收尾，与事件订阅的对称纪律同理。",
+      "notes": "边界：注册注销配对"
+    }
+  ]
+}

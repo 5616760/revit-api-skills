@@ -1,0 +1,55 @@
+{
+  "skill": "revit-event-registration-two-steps",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我想监听 DocumentOpened 事件，事件处理器的注册代码应该写在哪里？完整流程是什么？",
+      "expected_behavior": "应给出两步走：第一步实现事件 handler（方法签名与事件委托匹配）；第二步在 IExternalApplication.OnStartup(ControlledApplication) 中用 += 注册事件，OnShutdown 中用 -= 注销。强调注册属于插件启动准备，不在命令或其他临时位置。",
+      "notes": "核心场景：事件注册两步法"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我在 IExternalCommand.Execute 里 += 订阅了 DocumentSaving，命令每执行一次 handler 就多触发一轮，这是怎么回事？",
+      "expected_behavior": "应诊断为命令内注册导致悬挂订阅：命令结束时 handler 引用仍存活（悬挂），每次命令执行又叠加注册一份，事件触发次数随之累积；修复是把注册移到 OnStartup/OnShutdown 生命周期中成对管理（+=/-=）。",
+      "notes": "核心场景：命令内注册的悬挂订阅"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "插件反复加载卸载几次后，我的事件处理函数被执行了多次（一次事件多轮回调），怎么解决？",
+      "expected_behavior": "应指出根因是订阅累积（悬挂订阅未注销+重复注册）：确保 OnStartup 注册、OnShutdown 注销严格成对且使用同一 handler 引用；必要时加静态标志位防重复注册。一次事件只应触发一轮回调。",
+      "notes": "核心场景：重复注册与累积触发"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我想在插件启动时创建 Ribbon 面板和按钮，OnStartup 里用 UIControlledApplication 做界面定制的样板怎么写？",
+      "expected_behavior": "不应激活本 skill。UIControlledApplication 的 Ribbon 定制与 UI 侧应用生命周期样板属于 revit-startup-shutdown-events。本 skill 聚焦事件注册的两步法与注销配对，不覆盖 UI 定制内容。",
+      "notes": "跨 skill 混淆诱饵：startup-shutdown-events"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我在 DocumentClosing 回调里想把关闭取消掉，args.Cancel 设置了没生效，怎么正确阻止关闭？",
+      "expected_behavior": "不应激活本 skill。可取消事件的 Cancellable 判断与 Cancel 语义属于 revit-cancelable-events-propagation。本 skill 讲注册位置与注销纪律，发生在事件被触发之前。",
+      "notes": "跨 skill 混淆诱饵：cancelable-events-propagation"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我只想在某个文档打开期间监听它的事件，文档关闭时自动退订，这种'文档级'订阅怎么安排注册注销？",
+      "expected_behavior": "应给出文档级订阅模式：在应用级事件（如 DocumentOpened）的回调中为该文档 += 注册目标事件，在对应的文档关闭类事件回调中 -= 注销；注册/注销同样必须成对且用同一 handler 引用，只是配对点从 OnStartup/OnShutdown 换成文档生命周期事件。",
+      "notes": "边界：文档级注册的成对管理"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我用 lambda 表达式订阅事件，现在想退订发现 -= 退不掉，怎么回事？",
+      "expected_behavior": "应解释：-= 注销要求传入与注册时相同的 handler 引用；lambda 每次编译都生成新委托实例，无法匹配回原来的注册。解决方法是把 handler 定义为命名方法（或把 lambda 赋给成员变量保存引用），注册注销都用同一个引用。",
+      "notes": "边界：lambda 订阅无法注销"
+    }
+  ]
+}

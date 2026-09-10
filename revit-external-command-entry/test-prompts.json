@@ -1,0 +1,62 @@
+{
+  "skill": "revit-external-command-entry",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我要做一个被按钮触发、跑一次就完事的功能，入口类怎么写？必须实现哪个接口？",
+      "expected_behavior": "给出最小契约：类实现 IExternalCommand 并实现 Execute(ExternalCommandData, ref string, ElementSet) 返回 Result，再在 .addin 中以 Type=Command + FullClassName 注册。",
+      "notes": "正面场景：新建用户触发式插件的第一步入口写法。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "点了按钮 Revit 提示找不到命令类，.addin 里 FullClassName 我逐字符核对过还是不行，接下来该怎么排查？",
+      "expected_behavior": "给出排查清单：Assembly 的 dll 路径、Type 字段是否为 Command、FullClassName 是否含完整命名空间且与类名严格一致、Revit 是否信任程序集路径/签名。",
+      "notes": "正面场景：命令按钮无反应/找不到命令类的注册排查。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "Execute 方法的准确签名帮我写一遍，ref 关键字和 ElementSet 的类型我总记不住，编译老是挂。",
+      "expected_behavior": "写出正确签名 Execute(ExternalCommandData commandData, ref string message, ElementSet elements)，返回 Result，并指出漏写 ref 或类型用错是编译失败主因。",
+      "notes": "正面场景：确认 Execute 签名以免编译失败。"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "为什么我的插件工程里没有 Main 函数？程序到底从哪一行开始执行的？",
+      "expected_behavior": "解释外部命令没有 Main()：Revit 在用户点击时实例化入口类并调用 Execute，Execute 就是插件的 Main()，类必须经 .addin 注册才能被 Revit 找到。",
+      "notes": "正面场景：理解插件入口与常规程序入口的差异。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我想让插件在 Revit 一启动就自动加载并常驻运行，不需要用户点任何东西，这种该用哪种入口？",
+      "expected_behavior": "不应调用本 skill，理由：需求是启动时自动运行的入口选型问题（Application/DBApplication），属于 revit-plugin-entry-types / revit-command-app-loading-timing 的范畴；本 skill 只深讲 Command 一种。",
+      "notes": "跨 skill 混淆诱饵：邻居 revit-plugin-entry-types 的触发面（启动自动运行选哪种入口）。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我的命令一跑 Revit 就弹未处理的异常，怎么改成给用户看一句友好的错误提示？",
+      "expected_behavior": "不应调用本 skill，理由：问题聚焦 Execute 内异常如何进 message 并返回 Failed 的健壮性模式，应触发 revit-execute-try-catch-message。",
+      "notes": "跨 skill 混淆诱饵：邻居 revit-execute-try-catch-message 的触发面（未处理异常的兜底改造）。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "这道方程怎么解：3x + 5 = 20。",
+      "expected_behavior": "不应调用本 skill，理由：中学数学求解请求，与 Revit 插件开发无关。",
+      "notes": "完全无关的通用请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "命令类已经写好能跑了，现在想把 Execute 里的整个业务包进 try-catch，catch 那块该怎么写才符合规范？",
+      "expected_behavior": "不应调用本 skill，理由：入口骨架与注册已完成，异常兜底结构（catch 中 message=ex.Message + return Result.Failed + finally 释放）属于 revit-execute-try-catch-message 的范畴。",
+      "notes": "边界场景：从入口契约滑向异常处理模式，属相邻 skill 职责。"
+    }
+  ]
+}

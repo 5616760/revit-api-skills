@@ -1,0 +1,62 @@
+{
+  "skill": "revit-shared-parameter-file-init",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我的插件启动时调 OpenSharedParameterFile 报\"共享参数文件无效\"，是不是要先把文件路径设进去？正确顺序是什么？",
+      "expected_behavior": "给出初始化顺序约束：必须先设置 app.SharedParametersFilename 指向有效的共享参数文件路径，再调用 app.OpenSharedParameterFile()；顺序颠倒或路径无效即报错。",
+      "notes": "正面场景：初始化顺序约束"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "用户机器上可能没配置共享参数文件，我的插件怎么保证自己的共享参数定义可用？",
+      "expected_behavior": "给出插件自带参数文件的方案：程序先判断/设置 SharedParametersFilename 指向插件目录下的参数文件，再 OpenSharedParameterFile 获取 DefinitionFile 并从 DefinitionGroup 取定义；提醒一次只能持有一个打开的参数文件。",
+      "notes": "正面场景：插件自带参数文件"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "SharedParametersFilename 设置完马上生效吗？我设了新路径之后 OpenSharedParameterFile 拿到的还是旧文件的内容。",
+      "expected_behavior": "解释单文件持有机制：应用一次只持有一个共享参数文件，设置 SharedParametersFilename 后 OpenSharedParameterFile 打开的是当前指向的文件；若拿到旧内容应检查设置与打开调用之间是否被覆盖，并确认单文件约束下不要并发切换。",
+      "notes": "正面场景：单文件持有机制"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "OpenSharedParameterFile 返回的 DefinitionFile 是什么？我拿到它之后怎么取到我想要的参数定义？",
+      "expected_behavior": "说明 DefinitionFile 是共享参数定义的容器：正确前置是先设 SharedParametersFilename；随后经 file.Groups 找到 DefinitionGroup，再用组内名称或 GUID 取 ExternalDefinition 用于绑定或建参数。",
+      "notes": "正面场景：DefinitionFile 使用链路"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我的插件要用自己的共享参数文件，但用户项目原本配置了自己的参数文件，怎么保证用完之后用户的文件配置不被破坏？",
+      "expected_behavior": "不应激活本 skill。该问题是参数文件切换与恢复，应走 revit-shared-parameter-file-swap：三步切换法（记录用户原路径→切插件文件→操作完恢复）。本 skill 只讲初始打开的顺序约束。",
+      "notes": "跨 skill 混淆诱饵：切换恢复 vs 初始化"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我从共享参数文件拿到定义后 BindingMap.Insert 返回 false，绑定没成功也不报错，怎么办？",
+      "expected_behavior": "不应激活本 skill。该问题是绑定插入静默失败，应走 revit-binding-insert-silent-fail：Contains 预检加返回值检查。本 skill 只覆盖文件初始化阶段。",
+      "notes": "相邻主题诱饵：绑定失败排查"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我先设了插件文件路径并打开成功，后面又想再设回用户原来的文件再 OpenSharedParameterFile，第二次打开会不会冲突？",
+      "expected_behavior": "说明单文件持有约束下的行为：修改 SharedParametersFilename 后再次 OpenSharedParameterFile 将打开新指向的文件，旧 DefinitionFile 引用不应继续依赖；这正是文件切换场景，正确做法参照三步切换法（记录→切换→恢复），避免中途状态泄漏。",
+      "notes": "边界情形：初始化与切换的交叉地带"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "路径设的是一个不存在的文件，OpenSharedParameterFile 是抛异常还是会自动创建文件？",
+      "expected_behavior": "说明无效路径不会自动创建共享参数文件：OpenSharedParameterFile 对无效路径会失败（报文件无效）；插件应自带参数文件资源、复制到目标路径后再设置路径，而不是指望 API 自动生成。",
+      "notes": "边界情形：无效路径行为"
+    }
+  ]
+}

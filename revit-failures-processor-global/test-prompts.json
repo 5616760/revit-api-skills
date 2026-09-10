@@ -1,0 +1,62 @@
+{
+  "skill": "revit-failures-processor-global",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我们想让插件接管 Revit 全部的错误对话框，做企业级统一错误界面，用户不要看到零散的原生弹窗。",
+      "expected_behavior": "激活后应说明注册全局 IFailuresProcessor 的规则：会话中只有一个活动处理器、注册后标准错误对话框不再出现、所有错误归插件管。",
+      "notes": "A2 场景 1/2，本体"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "注册了全局处理器之后事务挂起不动了，整个文件像冻结了一样，是不是 WaitForUserInput 的问题？",
+      "expected_behavior": "激活后应诊断 WaitForUserInput 在无 UI 时导致事务无限挂起的坑，并介绍 Dismiss(Document) 清理挂起 UI 的用法。",
+      "notes": "A2 场景 3，最严重陷阱"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "所有错误都想经过我自己的逻辑：记日志、上报、按规则处理，应该走哪条路？",
+      "expected_behavior": "激活后应给出全局处理器接管全会话错误的架构方案，并提醒漏处理的错误用户将无感知的责任问题。",
+      "notes": "A2 场景 2"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "跑批处理的时候警告弹窗太吵了，想让这段脚本安安静静跑完。",
+      "expected_behavior": "不应调用本 skill，理由：只想安静批处理用事件或事务级预处理器足够，全局处理器大材小用且责任过重。",
+      "notes": "跨 skill 混淆诱饵：安静批处理 vs 接管 UI"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "怎么给当前这个事务单独挂一个预处理器压掉它的警告？",
+      "expected_behavior": "不应调用本 skill，理由：事务级处理是 revit-failures-preprocessor 的职责，全局处理器是全会话级兜底。",
+      "notes": "混淆诱饵：作用域相反"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "今天 A 股大盘走势怎么样？",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 无关的股票行情问题。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我就写个工具型小插件，要不要也上全局处理器统一错误界面？",
+      "expected_behavior": "不应调用本 skill，理由：小插件接管全局错误 UI 可能破坏用户对 Revit 原生交互的预期，能不用全局就别用。",
+      "notes": "边界：架构决策，小插件慎用"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我们公司和另一家各有一个插件都想注册全局故障处理器，会怎么样？",
+      "expected_behavior": "激活本 skill 并说明边界：会话中只能有一个活动处理器、先到先得，多插件环境要约定注册顺序治理，否则后注册者无法生效。",
+      "notes": "边界：单例冲突（书中盲点）"
+    }
+  ]
+}

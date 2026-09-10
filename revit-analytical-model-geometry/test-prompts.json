@@ -1,0 +1,55 @@
+{
+  "skill": "revit-analytical-model-geometry",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "怎么从梁的分析模型里拿到那条曲线？我调 AnalyticalModel.GetCurve() 有的图元返回 null，有的直接抛异常，到底该怎么用？",
+      "expected_behavior": "给出 GetPoint/GetCurve/GetCurves 三件套的按图元形态分派规则：点型构件用 GetPoint、单曲线构件用 GetCurve、多段构件用 GetCurves；取值前先读 IsSinglePoint/IsSingleCurve 判定形态，匹配后才调用，否则抛 InapplicableDataException。",
+      "notes": "核心场景：三件套分派规则"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我需要对一榀桁架里所有杆件的分析曲线求交点做节点验算，GetCurves 返回的多段曲线能直接拿 Reference 去标尺寸吗？",
+      "expected_behavior": "说明分析模型曲线没有 Reference，不能用于尺寸标注等基于 Reference 的操作；GetCurves 适合几何计算（求交、坐标），但注意区分取哪一层曲线。",
+      "notes": "核心差异点：分析曲线无 Reference"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "分析模型的 Raw 曲线、Active 曲线、Approximated 曲线有什么区别？导出到计算软件时应该用哪一层？",
+      "expected_behavior": "解释三层语义：Raw 是原始未调整几何、Active 是当前生效（含调整）的几何、Approximated 是离散逼近（常用于导出/计算接口）；按用途选层——几何计算用 Active，配合外部计算软件用 Approximated。",
+      "notes": "核心差异点：三层曲线语义"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "墙的分析模型是一条线，板的属性面在哪个对象上？我想分别拿到墙的分析线和板的分析面。",
+      "expected_behavior": "按图元类型给出取值路径：墙/梁类线状构件走 GetCurve（或 GetCurves），板/墙等面状构件的分析面属性通过 AnalyticalModel 相应属性获取；强调按类型分派、先判形态。",
+      "notes": "正面场景：面状构件分析几何"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我的代码没判形态直接调 GetCurve 崩了，堆栈里是 InapplicableDataException，帮我分析下这个异常为什么抛？",
+      "expected_behavior": "不应激活本 skill。这是取值方法误用的异常诊断（反例视角），应走 revit-analytical-model-exception；本 skill 只讲三件套的正确分派与三层语义，不展开异常根因分析。",
+      "notes": "跨 skill 混淆诱饵：异常诊断反例"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "怎么查询一根梁的分析模型支座情况，判断它是不是被完全支撑？",
+      "expected_behavior": "不应激活本 skill。支座/支撑关系查询（AnalyticalModelSupport、IsElementFullySupported）属于 revit-analytical-model-supports；本 skill 只覆盖几何位置读取。",
+      "notes": "跨 skill 混淆诱饵：位置 vs 关系"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "同一根梁用 GetCurve 取到的曲线和它参与 AssemblyInstance 的边界框不一致，我该信分析模型还是物理几何？",
+      "expected_behavior": "说明两者语义不同：AnalyticalModel 是抽象分析线（可能偏离物理中心线），做结构计算/导出应信分析模型；同时提醒多段构件应改用 GetCurves 避免形态不匹配，不能把分析曲线当物理边界用。",
+      "notes": "边界：分析几何 vs 物理几何的模糊地带"
+    }
+  ]
+}

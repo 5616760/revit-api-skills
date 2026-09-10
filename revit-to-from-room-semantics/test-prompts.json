@@ -1,0 +1,62 @@
+{
+  "skill": "revit-to-from-room-semantics",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "做人流疏散分析，想知道哪些房间通过哪扇门互相连通，能不能不搞几何求交就建出这个连通图？",
+      "expected_behavior": "指导把门当房间图的边、房间当节点：遍历 FamilyInstance 中 Door/Window，读两侧 FromRoom/ToRoom，两侧都非 null 则建立连通边，无需几何求交。",
+      "notes": "正面场景：房间邻接图（A2 场景 1）。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "门窗明细表里要标注每扇门开向哪个房间、从哪个房间来，这两个方向分别读哪个属性？",
+      "expected_behavior": "解释方向语义：门开向一侧的区域是 ToRoom、另一侧是 FromRoom（从哪来、到哪去），值是 Room 图元；两侧可以都为 null。",
+      "notes": "正面场景：门窗清单标注（A2 场景 2）。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "这扇门的 ToRoom 读出来是 null，门明明装在墙上，是模型坏了吗？",
+      "expected_behavior": "按语义解释判空：该侧区域不是房间（走廊未封闭、外部空间等）时属性返回 null，甚至两侧同时为 null；读之前必须判空避免 NullReferenceException。",
+      "notes": "正面场景：ToRoom 为 null 的困惑（A2 场景 4）。"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "想程序化验证门的朝向设计得合不合理，翻转一下再比较结果，有现成方法吗？",
+      "expected_behavior": "给出 FlipFromToRoom() 交换朝向做验证的用法，并说明属性随区域变动动态更新、重新划分房间后无需重算。",
+      "notes": "正面场景：翻转朝向验证（A2 场景 3）。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "怎么用 API 批量创建房间，再把每个房间的边界段读出来画轮廓线？",
+      "expected_behavior": "不应调用本 skill，理由：这是房间创建与边界检索（NewRoom、GetBoundarySegments），属于 revit-room-creation-boundary；本 skill 只做门窗对既有房间的归属判断。",
+      "notes": "跨 skill 混淆诱饵：房间创建边界 vs 门窗归属。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "Revit 打开大模型特别慢，帮我分析一下插件启动可以做哪些优化。",
+      "expected_behavior": "不应调用本 skill，理由：性能优化与门窗房间归属判断无关。",
+      "notes": "完全无关的通用请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "一个沙发族实例放在客厅里，API 怎么知道它属于哪个房间？是不是也读 ToRoom？",
+      "expected_behavior": "不应走 ToRoom/FromRoom，理由：这对属性是 API 对门窗的特设（表示门两侧的房间），普通族实例的房间归属用 FamilyInstance.Room（所在房间）属性直接读取。agent 应纠正属性选择并说明归属层级差异。",
+      "notes": "边界场景：普通族实例 Room vs 门窗 ToRoom/FromRoom。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "窗也有 FromRoom 和 ToRoom 吗？还是只有门才有？",
+      "expected_behavior": "门窗都有：该属性体系对 Door/Window 类别图元生效（连窗一起算房间连接器），非门窗图元则没有这对属性。agent 应明确适用范围边界。",
+      "notes": "边界场景：属性适用图元范围。"
+    }
+  ]
+}

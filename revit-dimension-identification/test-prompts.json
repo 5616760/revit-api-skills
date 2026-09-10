@@ -1,0 +1,69 @@
+{
+  "skill": "revit-dimension-identification",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "出图前要把项目里所有的尺寸标注按类型分个类统计一下。",
+      "expected_behavior": "用 BuiltInCategory.OST_Dimensions 过滤拿尺寸集合，按 Curve 形状（Line/Arc/null）乘 References 数量组合推断五种子类型，SpotDimension 单独处理。",
+      "notes": "正面场景：尺寸分类统计。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "遍历尺寸的时候有些对象的 Curve 是 null，空引用崩了，这些尺寸是坏数据吗？",
+      "expected_behavior": "说明径向（半径/直径）尺寸没有尺寸线、Curve 恒为 null 是正常契约，遍历代码必须先判空再分 Line/Arc 分支，不是数据损坏。",
+      "notes": "正面场景：径向判空处理。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "API 有没有一个属性直接告诉我这个尺寸是线性还是角度？",
+      "expected_behavior": "说明 API 无直接子类型判别方法，唯一路径是 Curve 形状与 References 数量的组合推断，别浪费时间找捷径。",
+      "notes": "正面场景：无捷径的组合推断。"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "想用代码创建角度尺寸标注，NewDimension 能做吗？",
+      "expected_behavior": "告知创建限制：NewDimension() 仅可创建线性尺寸，带 DimensionType 参数的重载很少使用；角度/径向尺寸无法程序化创建。",
+      "notes": "正面场景：创建能力边界。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "把尺寸标注引用的参照存成稳定字符串，下次会话还原。",
+      "expected_behavior": "不应调用本 skill，理由：这是 Reference 跨会话持久化需求（ConvertToStableRepresentation），应激活稳定句柄 skill。",
+      "notes": "混淆诱饵：尺寸分类 vs 参照持久化。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "创建一堵非矩形轮廓的墙，选哪个重载？",
+      "expected_behavior": "不应调用本 skill，理由：这是墙创建重载问题，与尺寸识别无关，应激活墙创建重载 skill。",
+      "notes": "混淆诱饵：跨主题邻居。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "SQL 里 join 和子查询哪个性能更好？",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 开发完全无关的数据库优化问题。",
+      "notes": "完全无关请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "模型里的高程点标注混在尺寸遍历结果里，怎么处理？",
+      "expected_behavior": "边界判别：SpotDimension 是独立类别，应识别出来按高程点单独处理，不混进五种尺寸子类型的推断框架。",
+      "notes": "边界场景：SpotDimension 的独立性。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "Curve 读出来是未绑定的（unbound），这会不会影响我用它算尺寸线长度？",
+      "expected_behavior": "边界判别：Dimension.Curve 始终是未绑定的是 API 契约不是异常；用于推断类型（Line=线性、Arc=弧长/角度）没问题，计算时按需处理绑定即可。",
+      "notes": "边界场景：未绑定契约的正常性。"
+    }
+  ]
+}

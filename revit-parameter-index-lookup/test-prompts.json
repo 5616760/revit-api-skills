@@ -1,0 +1,62 @@
+{
+  "skill": "revit-parameter-index-lookup",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "get_Parameter 到底有几种重载？字符串、BuiltInParameter 枚举、GUID，我该按什么依据选？",
+      "expected_behavior": "给出四种检索路径及其适用条件：字符串名称（用户可见名，受本地化影响）、BuiltInParameter 枚举（内建参数，跨语言稳定）、GUID（共享参数定义级唯一标识）、Definition 对象（已有定义时直接用）；按参数来源（内建/共享/项目自定义）选择路径。",
+      "notes": "正面场景：四种检索路径选型"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我用 get_Parameter(\"注释\") 查参数，中文版正常英文版查不到，换成什么方式才能稳定拿到？",
+      "expected_behavior": "诊断原因：字符串名称随界面语言本地化，跨语言不可靠；若目标内建参数应改用 BuiltInParameter 枚举检索（如 ALL_MODEL_INSTANCE_COMMENTS 类枚举），若共享参数改用 GUID 检索。",
+      "notes": "正面场景：本地化名称失效"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我在循环里对几百个图元用 LookupParameter 找共享参数，有的找得到有的找不到，检索共享参数最可靠的方式是什么？",
+      "expected_behavior": "指出共享参数最可靠的检索标识是定义级 GUID（不随语言、重名干扰免疫）；给出用 get_Parameter(GUID) 的写法，并提醒名称检索会被同名参数与本地化干扰。",
+      "notes": "正面场景：共享参数 GUID 检索"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "Element.LookupParameter 和 get_Parameter 有什么区别？为什么同一个参数名一个找得到一个找不到？",
+      "expected_behavior": "说明两者差异：get_Parameter 按给定标识精确检索（枚举/GUID 路径最稳），LookupParameter 按显示名称查找且受本地化与同名歧义影响；按参数来源选择：内建走枚举、共享走 GUID、确知显示名的简单场景可用名称。",
+      "notes": "正面场景：两个 API 的差异"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "共享参数的 GUID 和图元的 UniqueId 是不是一回事？我怎么确认项目里的参数就是我定义文件里那个？",
+      "expected_behavior": "不应激活本 skill。该问题是两种 GUID 的区分与校验，应走 revit-shared-parameter-guid-check：定义级 GUID 标识参数定义、UniqueId 标识图元实例，用 GUID 匹配确认参数来源。本 skill 只讲检索路径选择。",
+      "notes": "跨 skill 混淆诱饵：GUID 语义 vs 检索方式"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "为什么用 BuiltInParameter 枚举读出来的值要 AsDouble 还是 AsElementId？StorageType 怎么判断？",
+      "expected_behavior": "不应激活本 skill。该问题是参数存储格式分类，应走 revit-parameter-storage-types：ParameterType 语义类型与 StorageType 存储格式双分类及 AsXxx 取值方法。本 skill 关注检索路径而非取值。",
+      "notes": "相邻主题诱饵：取值方式与存储类型"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "项目里有两个同名的自定义共享参数，LookupParameter 返回的是哪一个？这种歧义怎么规避？",
+      "expected_behavior": "说明名称检索在重名时返回首个匹配（行为不可依赖）；规避歧义的正道是改用 GUID 检索共享参数（每个定义 GUID 唯一），或用 Definition 精确匹配。",
+      "notes": "边界情形：同名参数歧义"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "族文件里定义的参数（族参数，不是共享参数）用 GUID 查不到，这算检索方式用错了吗？",
+      "expected_behavior": "确认判断：族参数不是共享参数、没有 GUID，GUID 路径只适用于共享参数；族参数应按名称或遍历 Parameters 对照 Definition 检索；提示先判定参数来源再选路径。",
+      "notes": "边界情形：非共享参数无 GUID"
+    }
+  ]
+}

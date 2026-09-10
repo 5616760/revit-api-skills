@@ -1,0 +1,69 @@
+{
+  "skill": "revit-failures-processing-steps",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "要写全自动无弹窗的批处理，故障预处理器、FailuresProcessing 事件、全局处理器这三个到底怎么分工、怎么组合？",
+      "expected_behavior": "激活后应讲清三步流水线顺序：IFailuresPreprocessor 最先（事务级）→ FailuresProcessing 事件 → IFailuresProcessor 全局兜底，每步用 FailureProcessingResult 控制走向且可能循环。",
+      "notes": "A2 场景 1/3，总览框架本体"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我的事务没报任何错，但是也没提交成功，是不是被静默回滚了？",
+      "expected_behavior": "激活后应怀疑故障处理链路问题（如全局处理器配置不当导致无声中止），并给出排查路径。",
+      "notes": "A2 场景 2，无声回滚排查"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "FailureProcessingResult 的每个枚举值分别是什么意思？返回不同的值下一步会怎样？",
+      "expected_behavior": "激活后应逐值解释 ProceedWithCommit/ProceedWithRollBack/Continue 等对事务下一步动作的绑定关系，并警告无真实解决方案的 Commit 会无限循环。",
+      "notes": "A2 场景 4"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "怎么让批处理跑起来一个对话框都不弹？",
+      "expected_behavior": "激活后应基于三步流水线给出分级处理策略（预处理器解决已知噪音、事件做自动处理、必要时全局兜底），并警示全局处理器传 null 会导致全部静默回滚。",
+      "notes": "A2 语言信号"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "代码在事务外面改参数抛了 ModificationOutsideTransactionException，我该 catch 哪个类型？",
+      "expected_behavior": "不应调用本 skill，理由：这是 .NET 代码层的异常抛出/捕获问题（revit-exception-types），与事务收尾的故障裁决是两套体系。",
+      "notes": "跨 skill 混淆诱饵：异常 vs 故障"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "怎么注册一个自定义的业务警告发布给用户看？",
+      "expected_behavior": "不应调用本 skill，理由：注册与发布自定义故障是 revit-failure-definition-registration 的职责，本 skill 是消费端处理框架。",
+      "notes": "混淆诱饵：生产 vs 消费"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "推荐几个适合新手的机械键盘。",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit 故障处理完全无关的购物咨询。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我只想在跑某个特定事务时压掉一条已知警告，需要把整套三级流水线都设计一遍吗？",
+      "expected_behavior": "不应调用本 skill 的完整框架，理由：只想压一次特定警告时事务级 Preprocessor 足够，不必全局接管或设计完整分级策略。",
+      "notes": "边界：单事务压噪不必大架构"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "插件只做只读的模型检查统计，会走到故障处理流水线吗？",
+      "expected_behavior": "不应调用本 skill，理由：只读操作没有事务提交，故障处理不会发生。",
+      "notes": "边界：无事务提交"
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "skill": "revit-plugin-entry-types",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我要写人生第一个 Revit 插件，但完全搞不清该继承 IExternalCommand 还是 IExternalApplication，addin 清单里那个 Type 字段又该怎么填？",
+      "expected_behavior": "按插件生命周期需求做三入口横向决策：询问是点一下执行一次、启动驻留带 UI、还是无 UI 后台监听，给出对应接口并写出 .addin 中与之严格对应的 Type 字段值。",
+      "notes": "正面场景：新建插件的第一步入口选型 + 清单字段决策。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "Revit 死活不加载我的插件，dll 路径核对过没问题。我的类实现的是 IExternalDBApplication，会不会是清单里 Type 那行写错了？",
+      "expected_behavior": "核对 Type 字段与实现接口一一对应（应为 DBApplication），检查 FullClassName 拼写与大小写，并给出加载失败的常见排查点清单。",
+      "notes": "正面场景：.addin 加载失败、怀疑 Type 字段不匹配。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我想做个纯后台功能：文档一打开就自动跑一遍合规检查，全程不要任何界面，用户都感觉不到它存在。这种该选哪种入口？",
+      "expected_behavior": "判定为无 UI 后台监听需求，选 IExternalDBApplication（Type=DBApplication），并说明其只能访问数据库事件、不能建 Ribbon/TaskDialog 的能力边界。",
+      "notes": "正面场景：无 UI 后台监听 → DBApplication 的典型选型问题。"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "评审同事的代码：一个入口类里既建 Ribbon 面板、又订阅文档事件、还塞了一堆按钮点击的业务逻辑，这设计是不是有问题？",
+      "expected_behavior": "按三种入口的生命周期分工评估该设计的职责错配，指出哪些工作应拆到 Application/Command/DBApplication 各自的入口中。",
+      "notes": "正面场景：代码评审时判断入口设计是否错误。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "外部命令的 Execute 那三个参数分别是什么意思？commandData 能用来干什么？",
+      "expected_behavior": "不应调用本 skill，理由：问题聚焦 Command 一种入口的接口契约与参数语义，应触发 revit-execute-parameter-semantics（或 revit-external-command-entry），而非三入口横向选型。",
+      "notes": "跨 skill 混淆诱饵：邻居 revit-execute-parameter-semantics 的触发面（Execute 三参数分工）。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我在 OnStartup 里 += 了三个事件，OnShutdown 里是不是必须逐个 -=？不退订会内存泄漏吗？",
+      "expected_behavior": "不应调用本 skill，理由：问题深究 Application 内部两个钩子里事件注册/注销的配对约束，应触发 revit-startup-shutdown-events。",
+      "notes": "跨 skill 混淆诱饵：邻居 revit-startup-shutdown-events 的触发面（事件成对注册注销）。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "帮我把这段中文注释翻译成地道的英文。",
+      "expected_behavior": "不应调用本 skill，理由：纯文本翻译请求，与 Revit 插件开发完全无关。",
+      "notes": "完全无关的通用请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "入口我已经定好用 Command 了，类和 .addin 清单都写完能跑了，现在想知道点击按钮之后怎么在代码里拿到当前选中的图元。",
+      "expected_behavior": "不应调用本 skill，理由：入口选型与清单注册已全部完成，后续问题属于命令内数据检索（commandData → UIDocument → Selection），应由命令参数语义或图元检索专题解决。",
+      "notes": "边界场景：入口工作已结束，进入具体业务逻辑，属于本 skill 明确排除的范畴。"
+    }
+  ]
+}

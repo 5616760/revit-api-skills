@@ -1,0 +1,55 @@
+{
+  "skill": "revit-schedule-creation-flow",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "用代码建一个门明细表，字段怎么配？AddField 之前要先干什么？",
+      "expected_behavior": "激活后应给出 CreateSchedule 建表 → GetSchedulableFields 获取可用字段 → AddField(fieldId) 添加的完整链路。",
+      "notes": "正面场景：标准明细表创建与字段配置"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我要做材料提取明细表，是给 CreateSchedule 传个参数吗？",
+      "expected_behavior": "激活后应纠正：材料提取有专用工厂方法 CreateMaterialTakeoff，不能误用 CreateSchedule 加参数。",
+      "notes": "正面场景：9 种工厂方法选型"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "想在明细表里加一列公式算体积，API 支持吗？",
+      "expected_behavior": "激活后应指导通过 AddField 添加 ScheduleFieldType.Formula 类型的字段实现公式列。",
+      "notes": "正面场景：公式列"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "读表格数据时代码在有的项目读第 0 行是对的，有的项目却错位一行",
+      "expected_behavior": "激活后应诊断行列起始编号可能为 0 或 1，必须先读 FirstRowNumber/FirstColumnNumber 再定位单元格，不能硬编码索引。",
+      "notes": "正面场景：行号错位陷阱排障"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "帮我写代码在每个标高处生成楼层平面视图",
+      "expected_behavior": "不应调用本 skill，理由：平面视图创建走 ViewPlan.Create，属于 revit-2d-view-creation-paths 的触发面，本 skill 只管明细表类视图（ViewSchedule 体系）。",
+      "notes": "跨 skill 混淆诱饵：明细表 vs 普通视图创建"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "推荐几本学 Revit 的入门书",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 明细表编程无关的通用学习咨询。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我就是想在界面上手动加个明细表字段，不想写代码",
+      "expected_behavior": "不应调用本 skill，理由：用户需求是 Revit UI 操作指引，本 skill 提供 ScheduleDefinition/AddField 等代码 API 路径，界面操作不在其范围。",
+      "notes": "边界：UI 操作 vs API 编程"
+    }
+  ]
+}

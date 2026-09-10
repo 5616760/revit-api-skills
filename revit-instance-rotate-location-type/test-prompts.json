@@ -1,0 +1,55 @@
+{
+  "skill": "revit-instance-rotate-location-type",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "调了族实例的 Rotate() 方法想把构件转 45 度，结果好像只翻了个面，为什么？",
+      "expected_behavior": "激活后应指出 Rotate() 名不副实只翻转 180°，任意角度必须用 ElementTransformUtils.RotateElement(doc, elementId, axis, angle) 传弧度。",
+      "notes": "正面场景：Rotate() 180 度陷阱"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "写移动构件的工具，图元里既有门又有梁，读 Location 的时候该怎么区分处理？",
+      "expected_behavior": "激活后应指导四分支决策：先按运行时类型判 LocationPoint（点状，读写 .Point）/LocationCurve（线状，读写 .Curve）/仅 Location/无 Location，再分派操作。",
+      "notes": "正面场景：Location 多态分支"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "创建完梁之后想延伸它的端点，梁的位置信息在哪个属性上改？",
+      "expected_behavior": "激活后应说明梁是 LocationCurve 实例，通过 LocationCurve.Curve 读写曲线完成端点延伸。",
+      "notes": "正面场景：线状构件位置操作"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "想把一扇门的开向翻过来，flipHand 用之前要检查什么？",
+      "expected_behavior": "不应调用本 skill，理由：门开向翻转走 CanFlipHand/flipHand 能力位检查，属于 revit-instance-flip-state-check 的触发面，本 skill 只管旋转与位置读写。",
+      "notes": "跨 skill 混淆诱饵：翻转 vs 旋转"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "帮我写一份美食探店文案",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 无关的文字创作请求。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "CanRotate 是 false，我还能转这个构件吗？",
+      "expected_behavior": "激活后应辨析边界：CanRotate false 意味着实例自带 Rotate() 不可用且静默返回 false，但 ElementTransformUtils.RotateElement 工具类路径可能仍然可行——两条旋转路的可用性不完全同步，应先确认语境再定论。",
+      "notes": "边界：CanRotate 位与工具类路径的关系"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "Move 方法返回 true 了但构件没动，是不是位置设错了？",
+      "expected_behavior": "不应调用本 skill（优先），理由：变换'返回 true 不生效'的排障涉及 Pinned 固定等变换约束体系，属于 revit-element-transform-utils 的触发面；本 skill 聚焦 Location 类型分支与旋转角度语义，固定约束不在其知识面。",
+      "notes": "边界：变换不生效排障归 element-transform-utils"
+    }
+  ]
+}

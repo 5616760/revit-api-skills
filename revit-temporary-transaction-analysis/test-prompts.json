@@ -1,0 +1,55 @@
+{
+  "skill": "revit-temporary-transaction-analysis",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我想在墙上真正开洞之前先拿到开洞后的几何信息做碰撞检查，但不想实际修改模型，有什么办法？",
+      "expected_behavior": "应给出临时事务分析法四步：Transaction.Start() 开启临时事务 → 执行假设性修改（如删除/修改图元）→ doc.Regenerate() 重生成拿到新几何 → transaction.RollBack() 回滚使模型恢复原状。修改后的几何数据可在事务打开期间提取，回滚后模型不留痕迹。",
+      "notes": "核心场景：开洞前几何提取"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我想做 what-if 假设分析：模拟删除某根柱子后周边梁的受力连接关系会怎么变，但用户不能看到模型真的被改动，怎么实现？",
+      "expected_behavior": "应给出临时事务分析流程：开事务执行假设修改（删除柱子）→ Regenerate 使依赖图元更新 → 在事务内读取分析所需的新状态 → RollBack 恢复原模型。强调'用户不可见'由事务回滚保证：未提交的修改不会成为模型的持久状态。",
+      "notes": "核心场景：假设分析模拟"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "临时事务里 Regenerate 之后拿到的 Geometry 数据，RollBack 之后还能继续用吗？",
+      "expected_behavior": "应说明几何数据应在事务打开期间提取并转存为托管数据（坐标、体积等纯数据），再执行 RollBack；回滚后指向 Revit 内部几何对象的引用随模型状态恢复而失效，不能假设仍可解引用。顺序纪律：先提取、后回滚。",
+      "notes": "核心场景：数据提取时机与回滚"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我在事务里删错了图元并且已经 Commit 了，现在想把这个事务撤回来，还能 RollBack 吗？",
+      "expected_behavior": "不应激活本 skill。已提交事务无法再 RollBack，只能通过撤销（Undo）机制处理，属于事务层级/撤销管理问题（revit-transaction-hierarchy 的知识范畴）。临时事务分析只针对'故意不提交、主动回滚'的场景。",
+      "notes": "跨 skill 混淆诱饵：transaction-hierarchy（误提交后的处理）"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我的临时事务在 Regenerate 时抛了 RegenerationFailedException，事务处于半完成状态，这时候怎么善后？",
+      "expected_behavior": "不应激活本 skill。重生成失败后的强制回滚属于 revit-regenerate-failure-rollback 的知识：catch 后立即 RollBack 丢弃半完成修改。本 skill 的四步流程默认重生成成功；失败路径的处理应指路该 skill。",
+      "notes": "跨 skill 混淆诱饵：regenerate-failure-rollback"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我要对 100 面墙逐面模拟开洞，每面墙都走一遍'开事务→改→Regenerate→回滚'，跑起来非常慢，这个用法本身对吗？",
+      "expected_behavior": "应确认临时事务分析流程用法正确但指出性能代价：每次 Regenerate 都是高成本操作（可能触发全文档依赖重算，见 revit-regenerate-cost），100 次循环意味着 100 次重生成；可考虑减少循环内重生成次数、批量提取（一次修改多个候选再一次性 Regenerate）等优化方向。",
+      "notes": "边界：临时事务的性能成本（与 regenerate-cost 交界）"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "能不能用 SubTransaction 代替 Transaction 来做这种假设分析？反正最后也是要丢弃修改的。",
+      "expected_behavior": "应辨析：SubTransaction 必须在打开的外层 Transaction 内使用，其回滚只撤销分段修改、外层事务仍需管理；纯只读式的假设分析（不掺入真实修改）用单个 Transaction 走四步更直接。若同一次操作里既有真实修改又有假设分段，才考虑 Transaction + SubTransaction 组合。",
+      "notes": "边界：SubTransaction 替代方案辨析"
+    }
+  ]
+}

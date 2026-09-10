@@ -1,0 +1,69 @@
+{
+  "skill": "revit-performance-adviser-rule-interface",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我要实现一条自定义性能检查规则，IPerformanceAdviserRule 的七个方法分别该放什么逻辑？",
+      "expected_behavior": "激活后应逐方法讲解 GetName/GetDescription/InitCheck/WillCheckElements/GetElementFilter/ExecuteElementCheck/FinalizeCheck 的契约与执行模型。",
+      "notes": "A2 场景 1，七方法本体"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "规则在几百万图元的项目里跑得太慢，怎么用 GetElementFilter 限制只检查墙、门、房间这些图元？",
+      "expected_behavior": "激活后应说明 GetElementFilter 让引擎只喂给规则该看的图元，过滤器太宽会导致 ExecuteElementCheck 被调用百万次的性能灾难。",
+      "notes": "A2 场景 2/语言信号"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "InitCheck 和 FinalizeCheck 里分别放什么？统计汇总类的逻辑放哪边？",
+      "expected_behavior": "激活后应指出 InitCheck 是文件级一次、ExecuteElementCheck 是图元级多次、FinalizeCheck 汇总并报告故障消息，文件级逻辑误放图元级会浪费。",
+      "notes": "A2 场景 3"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "规则检查出问题后怎么在 FinalizeCheck 里作为故障消息报出去？",
+      "expected_behavior": "激活后应说明 FinalizeCheck 中报告故障的方式，并提醒别忘报告否则用户无感。",
+      "notes": "A2 场景 4"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "规则写好了，什么时候调 AddRule 注册、什么时候 DeleteRule 注销，会不会残留？",
+      "expected_behavior": "不应调用本 skill，理由：注册注销时机是 PerformanceAdviser 外壳（revit-performance-adviser-rules）的生命周期问题，本 skill 管规则内部实现。",
+      "notes": "跨 skill 混淆诱饵：内核 vs 外壳"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "FilteredElementCollector 查询整栋楼的墙太慢了，QuickFilter 和 SlowFilter 怎么搭配？",
+      "expected_behavior": "不应调用本 skill，理由：这是通用元素过滤器的快慢分层查询问题，不是性能顾问规则接口的内嵌过滤器（GetElementFilter 执行约定）。",
+      "notes": "混淆诱饵：规则内嵌过滤器 vs 独立 ElementFilter 查询"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "帮我拟一份年会的主持串词。",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 完全无关的文案写作请求。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我要统计整个文件的墙总面积，把统计逻辑写在 ExecuteElementCheck 里每个图元算一遍再累加行不行？",
+      "expected_behavior": "激活本 skill 并纠正边界：文件级/汇总逻辑应放 InitCheck/FinalizeCheck，放错到图元级会在每个图元上重算文件级结果，浪费严重。",
+      "notes": "边界：逻辑放错层级的常见 bug"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "Revit 自带的规则好像已经能查我要的问题了，还要自己实现一遍吗？",
+      "expected_behavior": "不应调用本 skill 的实现流程，理由：内置规则已覆盖的检查项无需自定义实现，直接使用即可。",
+      "notes": "边界：内置规则够用"
+    }
+  ]
+}

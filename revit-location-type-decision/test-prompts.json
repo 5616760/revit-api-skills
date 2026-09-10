@@ -1,0 +1,69 @@
+{
+  "skill": "revit-location-type-decision",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "element.Location 拿到的对象上点不出 Curve 也点不出 Point，好像是个抽象的东西，怎么才能拿到具体的位置信息？",
+      "expected_behavior": "激活后执行向下转型流程：取 Location 判空 → 依次尝试 as LocationCurve、as LocationPoint → 都失败即属'仅基类/无 Location'类，走参数或专有 API 替代路径。",
+      "notes": "A2 场景2：Location 是抽象基类，缺向下转型。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "墙我想挪个位置顺便把长度也改了，一堵直墙要改成更长的，MoveElement 好像只能平移做不到？",
+      "expected_behavior": "激活后判定墙是曲线驱动，走 LocationCurve.Curve 赋新曲线，一次赋值同时改位置和长度（直墙变斜墙也可以）；并说明这正是 MoveElement 做不到的。",
+      "notes": "A2 场景1：'移动+变形'复合需求，平移不够用。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "想给一批柱子重新定位到指定坐标，柱子这种图元的位置是怎么驱动的？",
+      "expected_behavior": "激活后判定柱是点驱动图元，用 LocationPoint.Point = newXYZ 赋值移动定位点。",
+      "notes": "A2 语言信号：柱/房间定位点。"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "对标高和楼板取 Location 想改位置，转型成 LocationCurve 和 LocationPoint 都失败了，是写法不对还是这类图元本来就不能这样定位？",
+      "expected_behavior": "激活后解释 Level/Floor 属'仅 Location（基类）'类，向下转型失败是预期行为，改位置要走参数或专有 API，不能对基类硬取坐标。",
+      "notes": "A2 场景3：标高/楼板转型失败。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我要把选中的一百个图元整体向右平移三米，用 MoveElement 循环跑还是 MoveElements 一次传进去？",
+      "expected_behavior": "不应调用本 skill，理由：批量整体平移属于'选哪条移动路径'的总决策，应触发 revit-element-move-decision（其答案是用 MoveElements 一次完成）。",
+      "notes": "跨 skill 混淆诱饵：D 组邻居 revit-element-move-decision 的触发面（批量平移选 API）——A2 段明确'移动决策树裁决整体路径，本 skill 是 Location 分支内部的类型学'。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我用 MoveElement 把柱子往上移了 3 米，结果 Z 坐标一点没变，也没报错，这是什么情况？",
+      "expected_behavior": "不应调用本 skill，理由：这是 MoveElement 对标高图元 Z 分量静默忽略的运行期陷阱，应触发 revit-moveelement-z-coordinate-trap。",
+      "notes": "跨 skill 混淆诱饵：D 组邻居 revit-moveelement-z-coordinate-trap 的触发面（Z 不对、静默忽略）。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "帮我把这个 SketchUp 模型转成 OBJ 格式，纹理要保留。",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 位置操作无关的格式转换请求。",
+      "notes": "完全无关的通用请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我想通过改 BoundingBox 来挪动图元的位置，这个思路可行吗？",
+      "expected_behavior": "应激活本 skill 并纠正概念：Location 是可写的驱动几何、BoundingBox 是只读的近似包围盒，不能用 BoundingBox 改位置，必须走 Location（或移动 API）路径。",
+      "notes": "边界场景：B 段'容易混淆的邻近方法论'——Location vs BoundingBox。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "图元被用户钉住了，Location 取出来都有值，赋值却不动，是 Location 类型判断错了吗？",
+      "expected_behavior": "应激活本 skill 但按 B 段边界提示：位置类型学帮不了 Pinned 问题，钉住图元须先 element.Pinned = false 解锁再操作位置；类型判断本身没错，是前置状态问题。",
+      "notes": "边界场景：类型学与前置约束（Pinned）的归属边界，B 段明确排除项。"
+    }
+  ]
+}

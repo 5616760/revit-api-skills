@@ -1,0 +1,69 @@
+{
+  "skill": "revit-element-retrieval-four-entries",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我要写个插件处理墙，第一步就卡住了：程序里到底怎么把墙对象拿到手？有好几种写法吗？",
+      "expected_behavior": "激活后先做需求判定：已知还是未知、单个还是批量、自动还是交互，然后从 ElementId/FilteredElementCollector/Selection/Document 属性四条路径中选出匹配入口并说明理由。",
+      "notes": "A2 场景1：新代码第一步'拿到图元'，还没想清楚怎么拿。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我在做一个 BIM 数据管道，要把模型里每个窗的标识写到 MySQL 里，之后别的程序还要根据这个标识把窗找回来。存哪一种 ID 合适？",
+      "expected_behavior": "激活后按'跨会话/跨文件持久化'分支提示外部存储应选 UniqueId（GUID）而非 ElementId，并说明 ElementId 仅项目内稳定。",
+      "notes": "A2 场景2：导出图元 ID 到外部数据库纠结存哪种 ID。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我手里就有一个图元的 ElementId，代码里却用了 FilteredElementCollector 把整个文档扫了一遍去找它，感觉特别浪费。",
+      "expected_behavior": "激活后指出已知单对象应直接用 Document.GetElement(ElementId) 做 O(1) 命中，识别这是入口错配并给出修正。",
+      "notes": "A2 场景3：入口与需求错配的自我觉察。"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "我想拿当前打开的那个视图对象，还有项目里全部标高，写了一堆 OfClass 过滤条件绕来绕去，有没有更直接的办法？",
+      "expected_behavior": "激活后判定这属于'项目级唯一对象'，改用 Document 对应属性直达访问，不需要过滤条件。",
+      "notes": "A2 场景4：项目级唯一对象在过滤条件里打转。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我已经决定用 FilteredElementCollector 了，现在纠结的是 new 的时侯传 document 还是传 view.Id，传视图的话是不是还得先校验一下？",
+      "expected_behavior": "不应调用本 skill，理由：用户已确定走过滤路径，讨论的是 collector 构造函数与骨架搭建细节，应触发 revit-filtered-collector-three-steps。",
+      "notes": "跨 skill 混淆诱饵：C 组内邻居 revit-filtered-collector-three-steps 的触发面（构造函数选择、IsViewValidForElementIteration 校验）。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "怎么让用户只能在屏幕上点到平面，选到曲面或者别的面就提示重新选？",
+      "expected_behavior": "不应调用本 skill，理由：讨论的是拾取交互的具体限制（ISelectionFilter），应触发 revit-selection-pickobject-filter。",
+      "notes": "跨 skill 混淆诱饵：交互拾取细节属于选择集 skill 的触发面。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "帮我用 Python 写一个爬虫，把一个电商网站的商品房价格抓下来存成 Excel。",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 图元检索完全无关的通用编程请求。",
+      "notes": "完全无关的通用请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我先按类别过滤出一批候选门，然后想让用户从里面挑几个做处理，这种一半程序一半交互的需求走哪条路？",
+      "expected_behavior": "应激活本 skill 并按判停条件处理：需求含多种检索形态时分别走各分支后组合（过滤路径拿候选集 + 交互路径让用户挑选），不要强行合并成一个入口。",
+      "notes": "边界场景：多种检索形态混合，正是四入口框架的判停条件条目。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我只是想知道模型里一共有多少个门，随手写了个数字就行，这种也算要'检索图元'吗？",
+      "expected_behavior": "应激活本 skill 做入口判定：批量同类计数属过滤路径（FilteredElementCollector），但可提示用户这属于简单统计、无需取回对象本身（后续取结果方式交下游 skill），本 skill 只负责确认入口选型。",
+      "notes": "边界场景：简单查询是否算走检索决策——答案是仍需入口判定，但不展开下游细节。"
+    }
+  ]
+}

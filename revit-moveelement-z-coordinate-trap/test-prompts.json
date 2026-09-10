@@ -1,0 +1,62 @@
+{
+  "skill": "revit-moveelement-z-coordinate-trap",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我在标高 1 原点 (0,0,0) 放了一根柱，用 MoveElement 移到 (10,20,30)，结果柱落在了 (10,20,0)，程序一点报错都没有，这是 bug 吗？",
+      "expected_behavior": "指出这是设计行为而非 bug：MoveElement/MoveElements 对基于标高的图元静默忽略 Z 分量——不报错、不警告，只做平面内移动；原因是标高图元必须锚定在自己的标高平面上，Revit 用\"丢弃 Z\"而不是抛异常来维持不变量。",
+      "notes": "正面场景：书中 (10,20,30) 落在 (10,20,0) 的经典反例"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我想把一根柱从当前高度抬升 300mm，用移动向量传 (0,0,0.984) 没效果，改柱的高度到底该怎么操作？",
+      "expected_behavior": "指出高度操作要走参数而不是几何：修改 Base Level / Top Level（换锚定标高）或底部偏移 / 顶部偏移参数（在标高基础上抬升）；高度属于标高参数域，位置属于平移向量域，两域分离，移动向量管不了高度。",
+      "notes": "正面场景：改柱高度走参数路径"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我写了个批量移动脚本，部分图元完全没动也没异常，另一部分动了但 Z 不对，这两类问题分别该怎么排查？",
+      "expected_behavior": "给出排查顺序：移动后位置不符且无异常 → 先查图元是否基于标高（Z 分量被静默丢弃）→ 再查是否被钉住（Pinned = true，先置 false 再移动）→ 最后才怀疑向量算错；强调\"静默忽略\"是最难发现的失败形态，养成移动后读回验证的习惯。",
+      "notes": "正面场景：批量移动双故障排查（标高约束 + Pinned）"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "code review 时看到同事对柱类图元调 MoveElement 传了含 Z 分量的平移向量，这代码有什么隐患？",
+      "expected_behavior": "指出对标高图元传含 Z 的移动向量并信任结果是书中警告的失败模式：Z 被静默丢弃，位置错且无诊断信息；建议代码中不存在对标高图元传非零 Z 移动向量的调用，高度变化全部落在 Base/Top Level 与偏移参数赋值上，并用读回验证兜底。",
+      "notes": "正面场景：code review 发现 Z 向量陷阱"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我有一批门窗要整体平移，还有一面墙要移动的同时改长度，不知道该选 MoveElement 还是直接改 LocationCurve？",
+      "expected_behavior": "不应激活本 skill。该问题是移动 API 路径的三路决策，应走 revit-element-move-decision：纯平移用 MoveElement/MoveElements（向量是偏移量）、平移+变形走 LocationCurve.Curve、点定位走 LocationPoint.Point。本 skill 只聚焦 MoveElement 路径上 Z 静默忽略与 Pinned 这两颗地雷。",
+      "notes": "跨 skill 混淆诱饵：移动路径决策 vs Z 坐标专项陷阱"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "移动之后我想把柱旋转 45 度，用 ElementTransformUtils.RotateElement 应该怎么传轴和角度？",
+      "expected_behavior": "不应激活本 skill。旋转属于几何变换操作而非平移 Z 陷阱，应走 revit-element-transform-utils 或 revit-instance-rotate-location-type 相关 skill。本 skill 只讲 MoveElement/MoveElements 的 Z 静默忽略与 Pinned 解锁。",
+      "notes": "相邻主题诱饵：旋转操作 vs Z 平移陷阱"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "一个自由放置的通用模型族实例（没有 Base Level 参数），我给它传含 Z 的移动向量，Z 会被忽略吗？",
+      "expected_behavior": "说明 Z 陷阱不适用于非标高图元：自由放置的族实例、通用模型 Z 移动正常，不必绕参数走；判停条件是\"非标高图元且未钉住 → 回到常规移动流程\"；判定的依据是图元有无 Base/Top Level 类参数。",
+      "notes": "边界情形：非标高图元 Z 正常移动"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我的柱用 MoveElement 移完 X、Y 都对了，但因为 Z 被忽略我改了底部偏移参数，怎么确认最终位置没有静默偏差残留？",
+      "expected_behavior": "给出验证方案：移动后读回 Location 确认 X/Y 生效，再读底部偏移/Base Level 参数确认 Z 语义由参数表达；强调新版 Revit 对 Z 静默忽略仍无警告，务必靠读回验证兜底，不要因为没有异常就默认成功。",
+      "notes": "边界情形：参数补高度后的读回验证"
+    }
+  ]
+}

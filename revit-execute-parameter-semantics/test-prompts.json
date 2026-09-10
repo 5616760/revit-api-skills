@@ -1,0 +1,55 @@
+{
+  "skill": "revit-execute-parameter-semantics",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "IExternalCommand.Execute 的 message 参数是 ref string，我在里面赋了值但用户什么都没看到，什么时候这个参数才生效？",
+      "expected_behavior": "应说明 message 的生效条件：仅当 Execute 返回 Result.Failed 时，Revit 才把 message 的内容作为错误信息展示给用户；返回 Succeeded 或 Cancelled 时赋值不产生任何用户可见效果。异常路径中 catch 里 message = ex.Message 再 return Failed 是标准用法。",
+      "notes": "核心场景：message 的 ref 语义与生效时机"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "命令出错时我想让出错的那些墙在视图中被高亮显示，用 Execute 的哪个参数实现？",
+      "expected_behavior": "应指出用 elements 参数（ElementSet）：把出错的图元 Add 进 elements 集合，配合 return Result.Failed，Revit 会在报告错误的同时高亮这些图元，帮助用户定位问题对象。",
+      "notes": "核心场景：elements 高亮出错图元"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "Execute 第一个参数 commandData 里能拿到什么？我需要当前文档和当前视图该从哪取？",
+      "expected_behavior": "应说明 ExternalCommandData 的能力：commandData.Application 提供 UIApplication（进而取 ActiveUIDocument/Document），还有命令触发时的上下文信息（如活动视图 View、日志数据 JournalData）；它是命令获取 Revit 上下文的入口，不需要自己另外寻找 Application。",
+      "notes": "核心场景：commandData 上下文入口"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我的 Execute 里没有 try-catch，异常直接把 Revit 搞崩溃了，给我一个标准的安全模板。",
+      "expected_behavior": "不应激活本 skill。异常防护的 try-catch-finally 模板属于 revit-execute-try-catch-message（catch 中 message 赋值 + return Failed + finally 清理）。本 skill 讲三参数的语义分工，是参数视角而非异常处理视角。",
+      "notes": "跨 skill 混淆诱饵：execute-try-catch-message"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "命令执行过程中我想给用户弹一个进度提示，并在失败时自动回滚事务组里的所有修改。",
+      "expected_behavior": "不应激活本 skill。事务组的整体回滚/合并撤销属于 revit-transaction-hierarchy。本 skill 只覆盖 Execute 参数语义，不涉及事务组织与 UI 提示策略。",
+      "notes": "跨 skill 混淆诱饵：transaction-hierarchy"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我 return Result.Cancelled 时给 message 和 elements 都赋了值，这些会被 Revit 用到吗？",
+      "expected_behavior": "应说明不会被使用：message 的展示和 elements 的高亮都只在 Result.Failed 时生效；Cancelled 是静默终止，赋值是无效代码。据此可提醒用户清理误导性赋值。",
+      "notes": "边界：Cancelled 时参数赋值无效"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "命令执行到一半发现选中的图元不满足条件，想给用户提示并把问题图元高亮，返回值该选 Failed 还是 Cancelled？",
+      "expected_behavior": "应建议返回 Result.Failed：需要用户看到 message 提示和 elements 高亮时必须用 Failed；Cancelled 用于无声放弃（如用户点了取消）。同时与'真正的异常路径'区分——这里是业务校验失败，message 写清校验原因比 ex.Message 更友好。",
+      "notes": "边界：业务校验失败与异常失败的返回选择"
+    }
+  ]
+}

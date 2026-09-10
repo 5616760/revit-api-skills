@@ -1,0 +1,62 @@
+{
+  "skill": "revit-view-vs-document-collector",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "在三维视图里用收集器找标高，返回是空的，但项目浏览器里明明有好几个标高，API 是不是有 bug？",
+      "expected_behavior": "激活后诊断构造函数可见性语义：视图级 collector 只含该视图可见图形图元，标高是基准图元三维视图不显示，'找不到≠不存在'，应换文件级（Document）构造。",
+      "notes": "A2 场景1：收集器在某视图返回空怀疑 API bug（书中空三维视图反例）。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我要写一个只处理当前平面视图里可见对象的命令，语义上就得绑定'用户看得见'，构造和性能上有什么要注意的？",
+      "expected_behavior": "激活后选视图级构造，先 IsViewValidForElementIteration 校验，并提示首次运行可能触发视图几何重建导致性能骤降，可预热或提示用户。",
+      "notes": "A2 场景2 + 场景4：视图级语义与几何重建代价。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我的统计命令有时跑出来的数量对有时不对，后来发现跟当时激活的是哪个视图有关，这是哪里出了问题？",
+      "expected_behavior": "激活后诊断为批处理/统计类需求误用视图级构造：结果随当前激活视图变化，统计类（与视图无关）需求应一律文件级构造。",
+      "notes": "A2 场景3：结果随激活视图变化、时对时错。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "收集器整体跑得慢，我看了一下过滤条件，是一个按参数筛选的慢速过滤器顶在最前面，要怎么调整过滤器链？",
+      "expected_behavior": "不应调用本 skill，理由：性能问题出在过滤器执行维度（SlowFilter 组合），不是构造函数的可见性语义与几何重建，应触发 revit-filter-quick-slow-logical。",
+      "notes": "跨 skill 混淆诱饵：C 组邻居 revit-filter-quick-slow-logical 的触发面——skill 的 A2 段明确区分'性能问题的两个不同来源'。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "过滤结果我取了两遍，一遍数数量一遍做导出，怎么感觉过滤像是跑了两遍？",
+      "expected_behavior": "不应调用本 skill，理由：这是 collector 不缓存、多次取结果重复过滤的问题，属结果物化维度，应触发 revit-collector-result-retrieval。",
+      "notes": "跨 skill 混淆诱饵：C 组邻居 revit-collector-result-retrieval 的触发面（结果复用）。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "帮我算一下这道结构力学题：简支梁跨度 6 米，均布荷载 10kN/m，跨中弯矩是多少？",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 检索无关的工程计算请求。",
+      "notes": "完全无关的通用请求（同为工程领域但与 API 无关）。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "用户在视图里手动隐藏了几面墙，我用视图级收集器的时候这些墙算不算在里面？这跟视图过滤器的隐藏是一回事吗？",
+      "expected_behavior": "应激活本 skill 并厘清边界：视图级 collector 语义是'该视图可见的图形图元'，用户临时隐藏的图元会缺席；这与'视图过滤/临时隐藏'的视图状态是两回事，排查时要分开考虑——不能把缺席一概归因于构造函数。",
+      "notes": "边界场景：B 段'容易混淆的邻近方法论'——视图级收集语义 vs 视图状态。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我想在链接进来的模型里找图元，应该用视图级还是文件级？",
+      "expected_behavior": "不应调用本 skill，理由：本 skill 裁决的是当前文档内 View 构造 vs Document 构造的行为差异，链接文档的检索语义不在其覆盖范围，应走链接文档相关 skill 并查新版文档。",
+      "notes": "边界场景：跨文档/链接检索与文档内可见性检索的模糊地带，B 段及盲点均提示链接场景需另查。"
+    }
+  ]
+}

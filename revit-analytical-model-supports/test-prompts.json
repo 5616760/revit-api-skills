@@ -1,0 +1,48 @@
+{
+  "skill": "revit-analytical-model-supports",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "怎么用 Revit API 查询一根梁的分析模型支座？我想判断梁端是不是真的被柱子支撑住了。",
+      "expected_behavior": "给出 AnalyticalModelSupport 查询思路：按图元类型选择查询方向（从梁查支撑它的构件、或从柱查被支撑的构件），并用 IsElementFullySupported 判断是否完全支撑；查询入口在图元的 AnalyticalModel 上。",
+      "notes": "核心场景：支座查询方向选择"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "IsElementFullySupported 返回 false 的梁，我想找出具体缺哪一端的支撑，API 里怎么定位不完整的支座？",
+      "expected_behavior": "说明思路：结合 IsElementFullySupported 做整体验证，再通过 AnalyticalModelSupport 逐端/逐支座枚举定位缺口；按图元形态（单曲线构件的端点）组织支座检查。",
+      "notes": "正面场景：定位缺口支座"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我在遍历结构构件做支撑检查，遇到 BeamSystem 图元取不到分析模型，是不是我的代码写错了？",
+      "expected_behavior": "指出 BeamSystem 本身没有 AnalyticalModel（聚合图元），必须先用 GetBeamIds 打散取成员梁，再逐根查询成员的 AnalyticalModelSupport；不是代码错误而是图元类型特性。",
+      "notes": "核心差异点：BeamSystem 须 GetBeamIds 打散"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "BeamSystem 为什么没有 AnalyticalModel？聚合类图元还有哪些也是这样？",
+      "expected_behavior": "不应激活本 skill。这是聚合图元无分析模型的系统性讨论，应走 revit-beamsystem-analytical-absence；本 skill 聚焦支座/支撑关系查询，BeamSystem 只是其中一个特例处理点。",
+      "notes": "跨 skill 混淆诱饵：通用决策表 vs 特例"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "怎么拿到梁的分析曲线端点坐标，再在端点之间创建 AnalyticalLink？",
+      "expected_behavior": "不应激活本 skill。端点几何读取与链接创建属于 revit-analytical-model-geometry 与 revit-analytical-link-hub；本 skill 只覆盖支座/支撑关系，不涉及几何与链接创建。",
+      "notes": "跨 skill 混淆诱饵：关系 vs 几何/链接"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我给一根墙查 AnalyticalModelSupport，返回的支撑构件里有的是梁有的是墙，不同类型支撑的检查方向是不是不一样？怎么统一处理？",
+      "expected_behavior": "按 SKILL.md 说明按图元类型选择查询方向（线状/面状/竖向构件的支撑判定路径不同），统一处理时应先分类再选对应查询方向，不能假设所有支撑关系都同构。",
+      "notes": "边界：异构支撑类型统一处理"
+    }
+  ]
+}

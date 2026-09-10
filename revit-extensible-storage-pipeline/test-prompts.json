@@ -1,0 +1,62 @@
+{
+  "skill": "revit-extensible-storage-pipeline",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我想在每根管道图元上存结构化的检查记录（日期、检查人、一个历史记录数组），用户不能在属性窗口看到这些数据，用可扩展存储该怎么做？",
+      "expected_behavior": "给出六步流水线：(1) new SchemaBuilder(schemaName/GUID) 创建并命名架构；(2) SetReadAccessLevel/SetWriteAccessLevel 设权限；(3) AddSimpleField/AddArrayField/AddMapField 定义字段（如 string 日期 + string 检查人 + Array<string> 历史）；(4) builder.Finish() 后 new Entity(schema)；(5) entity.Set<T>(fieldName, value) 赋值；(6) element.SetEntity(entity) 挂载图元；所有修改必须在 Transaction 内，读取用 element.GetEntity(schema) 验证。",
+      "notes": "正面场景：端到端六步流水线"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我的 Schema 希望第三方厂商的程序能读但只有我自己能写，SetReadAccessLevel 和 SetWriteAccessLevel 该怎么配？",
+      "expected_behavior": "给出权限配置：SetReadAccessLevel(AccessLevel.Public) + SetWriteAccessLevel(AccessLevel.Vendor) + SetVendorId(\"myVendorId\")；强调写访问非 Public 时必须设置 VendorId，否则 Finish 前报错；AccessLevel.Public（所有人可读写）与 AccessLevel.Vendor（仅 VendorId 匹配者可写）权限粒度不同。",
+      "notes": "正面场景：读写权限隔离配置"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "SchemaBuilder 的 AddSimpleField 定义了一个 double 字段想存长度，Finish 的时候抛了单位相关的异常，带单位的字段要怎么处理？",
+      "expected_behavior": "指出带单位的字段必须给 DisplayUnit 参数（定义字段时指定），否则抛\"单位缺失\"异常；赋值时用带单位的重载 entity.Set<T>(field, value, DisplayUnitType)。",
+      "notes": "正面场景：带单位字段的 DisplayUnit 要求"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "我用 element.SetEntity(entity) 存数据，但没包在 Transaction 里，数据好像没存上，问题出在哪？",
+      "expected_behavior": "指出所有修改（包括 SetEntity）必须在 Transaction 内执行：using (Transaction t = new Transaction(doc, \"store data\")) { t.Start(); element.SetEntity(entity); t.Commit(); }；不在事务内的修改会被回滚丢弃 Schema 与 Entity。",
+      "notes": "正面场景：事务内挂载图元"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我有个\"成本\"字段要让用户在属性窗口看到、能排进墙明细表还能 ODBC 导出，存图元数据该选共享参数还是可扩展存储？",
+      "expected_behavior": "不应激活本 skill。该问题是共享参数 vs 可扩展存储的选型决策，应走 revit-data-storage-paths：数据消费者是明细表/属性窗口/ODBC 导出 → 必须共享参数；可扩展存储对 UI 和导出完全不可见，选错会导致数据无法在明细表中使用。本 skill 是选定可扩展存储之后的六步实现。",
+      "notes": "跨 skill 混淆诱饵：存储路径选型 vs 六步实现"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我的 Schema 已经 Finish 上线了，现在想给它加一个新字段，再调 AddSimpleField 行不行？",
+      "expected_behavior": "不应激活本 skill 作为主答。Schema Finish 后不可变、追加字段的异常行为与版本化迁移是该专题，应走 revit-schema-immutable-after-finish（策略）与 revit-schema-fieldbuilder-one-shot（反例）：只能创建嵌版本号的新 Schema 并做数据迁移。本 skill 只在流水线约束处点到这一点。",
+      "notes": "跨 skill 混淆诱饵：Schema 不可变专题"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "数据既要结构化嵌套，又想让用户偶尔在界面上看到其中一两个值，可扩展存储能不能让字段部分可见？",
+      "expected_behavior": "说明可扩展存储对 Revit UI 完全不可见是整体机制、没有\"部分字段可见\"选项：数据出现在属性窗口/明细表/tag/ODBC 导出 → 必须共享参数；结构化嵌套 + 隐藏 → 可扩展存储；两者混合需求要拆成两条路径（结构化走 Schema、需展示的字段镜像为共享参数），简单键值且无需隐藏时共享参数更轻量。",
+      "notes": "边界情形：可见性需求与结构化需求的交叉"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我按流水线走到 Finish() 时报错了，权限字段我都配了 Public 读、Vendor 写，会是哪里漏了？",
+      "expected_behavior": "指出写访问非 Public（Vendor）时必须 SetVendorId，Finish 前漏设会报错，补设后重试；这是六步流程第 2 步的判停条件；若已设 VendorId 则检查带单位字段是否漏了 DisplayUnit 参数（抛\"单位缺失\"异常）。",
+      "notes": "边界情形：Finish 前权限配置不完整"
+    }
+  ]
+}

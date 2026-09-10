@@ -1,0 +1,62 @@
+{
+  "skill": "revit-id-vs-uid-decision",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我们的模型开了工作共享，每次和中心文件同步之后，我外部记录的图元 ID 就有一部分对不上了，这是为什么？",
+      "expected_behavior": "用附录规则解释：工作共享（Worksharing）同步时 ElementId 可能变化——中心文件同步是 ID 漂移的真实来源；多人协作场景禁用 ElementId 做持久键，应改用 UniqueId（GUID 全局唯一）作为外部跟踪主键，同步后引用不再断链。",
+      "notes": "正面场景：工作共享同步的 ElementId 漂移"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我发现复制一个图元之后，它的 UID 变了但 ElementId 好像是老值，这算不算 UID 不稳定？复制时这两个 ID 的行为规则是什么？",
+      "expected_behavior": "给出复制规则：复制图元时 UID 必然变化（保证全局唯一），ElementId 不一定变；并纠正误读——UID 变是因为新对象是新身份，这正是它作为身份标识的正确行为；真正不稳定的是跨同步的 ElementId。",
+      "notes": "正面场景：复制后 ID 行为差异与误读纠正"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我要做一个 BIM 数据管道，把图元导出到外部数据库做集成，主键字段该存 ElementId 还是 UniqueId？",
+      "expected_behavior": "按唯一性边界判断：ElementId 是整数、唯一性以\"本项目\"为界，跨项目不唯一会撞号；外部系统引用一律用 UniqueId（GUID 字符串，跨项目全局唯一）；一句话决策：读一次就用 → ID，存下来以后用/跨人跨文件用 → UID。",
+      "notes": "正面场景：BIM 数据管道导出主键选型"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "我写动态更新框架（Updater），需要在会话之间持续标识被更新的图元，用 ElementId 还是 UniqueId 好？",
+      "expected_behavior": "采纳书中框架级建议：更新器（Updater/动态更新框架）管理中用 UniqueId 而非 ElementId；凡是要在\"时间维度上持续引用\"的场景都倾向 UID。",
+      "notes": "正面场景：Updater 持续引用选 UID"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "两个 ElementId 明明值一样，用 Object.Equals 比较却返回 false，ElementId 的正确比较方式是什么？按 UniqueId 回查图元又该怎么走？",
+      "expected_behavior": "不应激活本 skill 作为主答。该问题需要正文层的完整决策框架与代码路径（IntegerValue 比较、GetElement 回查），应走 revit-elementid-vs-uniqueid：ElementId 比较不要用 Object.Equals（引用语义陷阱），应比较 IntegerValue。本 skill 是附录术语速查版，完整代码路径应转正文版。",
+      "notes": "跨 skill 混淆诱饵：同源正文版完整框架"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我已经知道一个图元的 ElementId 了，代码里怎么把它变回 Element 对象？用 GetElement 还是 FilteredElementCollector？",
+      "expected_behavior": "不应激活本 skill。按已知 ID 检索图元的入口选择属于\"检索四法\"决策，应走 revit-element-retrieval-four-entries：已知单个图元用 GetElement（ElementId 是其直接参数）。本 skill 只管标识选型，不管检索入口。",
+      "notes": "跨 skill 混淆诱饵：检索入口 vs 标识选型"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "外部库里存了一批 ElementId，现在模型升级成工作共享了，怎么把存量数据迁移成 UniqueId？",
+      "expected_behavior": "给出迁移方案：ElementId → UniqueId + 映射表——用存量 ElementId 通过 GetElement 回查图元，读出 UniqueId 写入外部库，并保留映射表过渡；同时按规则归因：工作共享模型用 ElementId 做外部跟踪，同步即断链，属书中警告的失败模式。",
+      "notes": "边界情形：存量 ID 缺陷的迁移"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "模型对比工具要在两个版本的文件之间对上同一个图元，一边是复制出来的副本，这种场景 UID 规则还适用吗？",
+      "expected_behavior": "说明复制产生的图元是\"新对象、新身份\"：副本的 UID 必然不同于原件（全局唯一保证），ElementId 则不一定变；模型对比不能假设复制后 UID 不变去\"对上同一图元\"——UID 标的是对象身份不是几何内容哈希；跨项目/跨文件比较仍应以 UID 为基准，链接文档中的 UID 组合形式需查新版文档。",
+      "notes": "边界情形：复制场景下 UID 语义的正确理解"
+    }
+  ]
+}

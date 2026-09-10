@@ -1,0 +1,62 @@
+{
+  "skill": "revit-link-reference-conversion",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "插件让用户在链接模型里点选一面墙，我想在主体文件里基于这个面放构件，怎么把参照转过来？",
+      "expected_behavior": "激活后应给出 Selection.PickObject(ObjectType.LinkedElement) 取链接内 Reference，再用 CreateLinkReference() 转为主体 Reference 的流程。",
+      "notes": "A2 场景 1，本体"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "要根据链接里的图元做测量和碰撞检查，拾取结果怎么接入主体文档的几何 API？",
+      "expected_behavior": "激活后应说明链接侧 Reference 不能直接喂给主体 API，必须经 CreateLinkReference 转换，否则坐标系/文档不匹配导致失败。",
+      "notes": "A2 场景 2"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "用户选了链接里的东西，代码却放不了族也取不到几何，报的错像是参照无效，问题在哪？",
+      "expected_behavior": "激活后应诊断链接参照未转换就使用的问题，并检查 ISelectionFilter 是否同时过滤了 AllowReference。",
+      "notes": "A2 场景 4 + 失败模式"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "怎么用代码创建一个 Revit 链接，并设置成相对路径、附着模式？",
+      "expected_behavior": "不应调用本 skill，理由：链接文件的创建/加载/路径配置是文件层操作（revit-link-decision-flow），本 skill 是链接内几何的参照转换层。",
+      "notes": "跨 skill 混淆诱饵：文件层 vs 几何参照层"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "让用户只在主体模型里选墙，不涉及任何链接，PickObject 配 ISelectionFilter 怎么写？",
+      "expected_behavior": "不应调用本 skill，理由：纯主体内拾取无链接参与，直接用普通 PickObject 与选择过滤即可，无需链接参照转换。",
+      "notes": "混淆诱饵：主体内拾取不转换"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "这个游戏卡关了，有什么通关攻略？",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 完全无关的游戏咨询。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "能不能通过 GetLinkDocument 直接把链接里那面墙的材质改了？",
+      "expected_behavior": "不应调用本 skill 的修改路径，理由：链接文档是只读的，要修改链接内容必须打开链接文件本身在其中有写权限的会话。",
+      "notes": "边界：只读约束"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "用户在链接里选了个剖切边缘，转换参照的时候报错，这种对象能转吗？",
+      "expected_behavior": "激活本 skill 并说明边界：剖切边缘等本身不提供 Reference 的对象无法转换，应先做有效性判断别硬转。",
+      "notes": "边界：无 Reference 对象"
+    }
+  ]
+}

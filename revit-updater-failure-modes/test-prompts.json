@@ -1,0 +1,55 @@
+{
+  "skill": "revit-updater-failure-modes",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我的 updater 修改图元之后又触发了自己，循环几十层后 Revit 弹窗说已禁用这个更新器，这是什么故障？怎么防？",
+      "expected_behavior": "应识别为无限循环故障（updater 三大故障之一）：修改再次命中自己的触发器，循环超限后 Revit 通知用户并禁用该 updater。防御：触发器尽量精确（收窄过滤器与 ChangeType，避免命中自己产出的修改）、修改前做幂等检查（目标已满足就不再改）。",
+      "notes": "核心场景：无限循环故障"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "两个更新器都响应同一图元的修改，Revit 提示冲突编辑，把我的更新取消了，还问我要不要禁用更新器，怎么处理？",
+      "expected_behavior": "应识别为冲突编辑故障：多个 updater 的修改互相冲突时，Revit 取消更新并向用户显示错误消息，同时提供禁用相关更新器的选项。防御：用较低的 ChangePriority（降低自己更新的优先级）、修改幂等、触发器精确，减少与其他更新器的碰撞面。",
+      "notes": "核心场景：冲突编辑故障"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "同事把中心文件同步过来，我这边打开时弹警告说文档里引用的更新器在本机不存在，这个故障怎么解决？",
+      "expected_behavior": "应识别为中心文件缺更新器故障：文档带有的 updater 修改信息在本机没有对应注册的更新器时，Revit 在同步/打开时发出警告；解决方向是确保插件在所有协作者机器上部署注册，避免'有更新器用户'与'无更新器用户'混用同一模型。",
+      "notes": "核心场景：中心文件缺更新器"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我的 updater 在 Execute 里调用 LoadFamily，抛了 ForbiddenForDynamicUpdateException，哪些 API 不能在更新器里调？",
+      "expected_behavior": "不应激活本 skill。更新回调中的禁用 API 清单（LoadFamily、ViewSheet.AddView、Save/SaveAs/Close、UpdaterRegistry 调用等）属于 revit-iupdater-forbidden-api-list。本 skill 讲更新器的运行时故障模式（循环/冲突/缺更新器），不是 API 禁用清单。",
+      "notes": "跨 skill 混淆诱饵：iupdater-forbidden-api-list"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我的 updater 要记住上次处理过的图元，跨会话重新打开 Revit 后 ID 对不上，该用什么标识存？",
+      "expected_behavior": "不应激活本 skill。跨会话图元标识（UniqueId 替代 ElementId）与状态管理属于 revit-updater-change-management。本 skill 讲故障模式与防御三件套，不涉及持久标识设计。",
+      "notes": "跨 skill 混淆诱饵：updater-change-management"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "ChangePriority 我一直没设置，用默认值和主动设成低优先级，对故障防御有什么实际差别？",
+      "expected_behavior": "应说明 ChangePriority 是防御三件套之一：高优先级更新更早执行、更易与其他更新器产生冲突放大；主动选较低的优先级（如最低档）能减少碰撞、降低冲突编辑和连锁触发的概率。防御三件套是触发器精确 + ChangePriority + 幂等的组合，单靠一项不够。",
+      "notes": "边界：ChangePriority 在防御中的角色"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "做幂等检查需要在 Execute 里读取图元状态，这会不会又触发一次更新？防御手段本身是不是也要防触发？",
+      "expected_behavior": "应说明纯读取（Get 参数值、查询几何状态）不构成修改、不会命中'修改类'触发器，幂等检查是安全的；产生风险的只是修改动作。若触发器配的是修改类 ChangeType，只读检查不会再次触发；这也说明触发器要精确配到修改类而非泛化监听。补充：幂等检查中不能开新事务（Execute 内事务禁令，衔接 revit-iupdater-execute-transaction-rules）。",
+      "notes": "边界：只读幂等检查的安全性"
+    }
+  ]
+}

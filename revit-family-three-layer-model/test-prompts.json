@@ -1,0 +1,62 @@
+{
+  "skill": "revit-family-three-layer-model",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "面试被问到 Revit 里的族、族类型、族实例是什么关系，到底谁包含谁？",
+      "expected_behavior": "激活后应讲清三层包含/从属关系：Family 装所有类型，FamilySymbol 对应 UI 的类型项，FamilyInstance 是放进项目的构件且只归属一个符号。",
+      "notes": "正面场景：概念理解"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "拿到一个 Element，想知道它是哪个族哪个类型的，往上查的属性叫什么？",
+      "expected_behavior": "激活后应给出反向导航概念：instance.Symbol 拿类型、symbol.Family 拿族，并说明这是从属关系而非类继承。",
+      "notes": "正面场景：实例反查族/类型"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "写代码放构件，族文件加载进来了，实例要用的那个类型对象从哪一层拿？",
+      "expected_behavior": "激活后应说明实例不能凭空创建，必须从'族→符号→实例'逐层取得，FamilySymbol 是创建实例的前提。",
+      "notes": "正面场景：创建前的层级认知"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "我给实例换了个类型，结果外观一点没变，是不是我改错层了？",
+      "expected_behavior": "激活后应诊断类型互换是'改引用'不是'改几何'，正确做法是替换 FamilyInstance.Symbol 指向的符号。",
+      "notes": "正面场景：层级混淆排障"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "帮我写段代码遍历加载进来的桌子族的所有类型，把 900×900 那个符号换成实例的类型",
+      "expected_behavior": "不应调用本 skill，理由：用户要的是三层间导航的具体代码操作（遍历符号、instance.Symbol 赋值互换），属于 revit-family-symbol-instance-navigation 的触发面，本 skill 只讲概念模型。",
+      "notes": "跨 skill 混淆诱饵：三层导航代码 vs 三层概念"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "墙能不能像门窗一样从外面加载一个 rfa 进来换类型？",
+      "expected_behavior": "不应调用本 skill，理由：问题核心是系统族不可载入、走 WallType 专用类的判别，属于 revit-system-vs-component-family 的触发面。",
+      "notes": "跨 skill 混淆诱饵：系统族/构件族判别"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "帮我把这份 PPT 的配色换成科技风",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit 族对象模型无关的通用设计请求。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "楼板这种系统族没有族文件，那'族有类型、类型有实例'的说法对它还成立吗？",
+      "expected_behavior": "激活后应说明三层模型是普适骨架，系统族同样有族/类型/实例概念，只是类型经 WallType/FloorType 等专用类访问，不走 Family/FamilySymbol 对象——这是本 skill 的边界内知识。",
+      "notes": "边界：系统族套三层模型（本 skill 覆盖，但与系统族 skill 交界）"
+    }
+  ]
+}

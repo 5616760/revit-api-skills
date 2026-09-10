@@ -1,0 +1,48 @@
+{
+  "skill": "revit-level-no-auto-view",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我用 NewLevel 批量建了 100 个标高，业主说楼层平面一个都没出来，是 API 有 bug 吗？",
+      "expected_behavior": "激活后应解释这不是 bug：API 的 NewLevel 只生成 Level 图元，静默跳过 UI 的询问环节，不生成关联平面视图。",
+      "notes": "正面场景：批量标高无视图的核心陷阱"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "写创建标高的插件，怎么保证每个标高都有对应的楼层平面？",
+      "expected_behavior": "激活后应给出补建方案：NewLevel 后显式调用 ViewPlan.Create(document, viewFamilyTypeId, levelId) 建关联平面视图。",
+      "notes": "正面场景：补建视图"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "界面上建标高会问要不要生成平面视图，API 怎么不问也不生成？",
+      "expected_behavior": "激活后应解释 API 与 UI 的隐式行为差异是普遍模式：API 只做显式请求的事，所有关联操作必须显式调用。",
+      "notes": "正面场景：UI 与 API 行为差异认知"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "怎么用 ViewPlan.Create 在标高上创建天花板平面视图？需要哪些 Id？",
+      "expected_behavior": "不应调用本 skill，理由：问题聚焦 ViewPlan.Create 创建入口的参数细节（ViewFamilyTypeId/levelId），属于 revit-2d-view-creation-paths 的触发面，本 skill 只负责'标高不自动生成视图'这一隐式行为认知。",
+      "notes": "跨 skill 混淆诱饵：视图创建入口 vs 无视图陷阱"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "帮我把电脑里的照片按拍摄日期整理重命名",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 完全无关的文件管理请求。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我想要弹一个像界面那样的对话框让用户选是否生成平面视图，API 能做到吗？",
+      "expected_behavior": "不应调用本 skill，理由：用户需求是自定义对话框交互（TaskDialog 相关），而非理解'标高不自动建视图'的隐式行为；该 skill 的知识核心是 API 静默跳过询问环节，不提供复刻 UI 询问的方案。",
+      "notes": "边界：复刻 UI 交互 vs 理解隐式差异"
+    }
+  ]
+}

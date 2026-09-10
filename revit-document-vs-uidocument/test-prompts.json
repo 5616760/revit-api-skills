@@ -1,0 +1,62 @@
+{
+  "skill": "revit-document-vs-uidocument",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "刚接触 Revit API，UIDocument 和 Document 到底有什么区别？什么时候用哪个？",
+      "expected_behavior": "给出分工律：UI 层与 DB 层严格分离——凡是'看得见、点得着'的界面操作（选择拾取、取点、激活视图）走 UIDocument，凡是模型数据操作（图元检索、编辑、参数、保存）走 Document；两者可经 uiDocument.Document 从 UI 文档下钻到数据文档。",
+      "notes": "核心差异点：UI/DB 分层分工"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我在 IExternalDBApplication 里想访问打开的文档，拿不到 UIDocument，该怎么枚举文档？",
+      "expected_behavior": "给出无 UI 语境路径：IExternalDBApplication（数据库级应用）里没有 UIDocument，只能通过 Application.Documents 集合枚举 DB 层 Document；此时任何拾取/提示类 API 都不可调用。",
+      "notes": "核心差异点：无 UI 语境走 Application.Documents"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "外部命令里我要同时让用户选图元又要改参数，从哪个对象入手拿这四个顶层对象？",
+      "expected_behavior": "给出标准下钻链：外部命令经 commandData.Application.ActiveUIDocument 取得 UIDocument（外部命令天然有 UI 语境），选择/拾取经 UIDocument，过滤/编辑经其 .Document；四对象是应用级×文档级×数据/UI 层的 2×2 矩阵（Application/UIApplication/Document/UIDocument）。",
+      "notes": "正面场景：外部命令标准下钻链"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "Application 和 UIApplication 也是一对吗？我怎么判断一个需求该挂在哪个对象上？",
+      "expected_behavior": "确认配对关系：应用级（Application/UIApplication）×文档级（Document/UIDocument）构成 2×2 矩阵；判断法——需求是界面交互（弹提示？取选集？）挂 UI 列，是数据操作（改参数？保存？）挂 DB 列。",
+      "notes": "正面场景：四对象判定"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我已经拿到 Document 了，想在里面创建图元、查参数、做保存，这些能力分别从哪些入口进去？",
+      "expected_behavior": "不应激活本 skill。已确定用 Document、讨论其内部能力分布，属于 revit-document-function-map 的触发面——先分对象（本 skill），再进功能地图。",
+      "notes": "跨 skill 混淆诱饵：Document 功能导航"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "PickObject 拾取的时候我想加个过滤器只让用户选结构柱，ISelectionFilter 怎么写？",
+      "expected_behavior": "不应激活本 skill。这是具体拾取/选择 API 的用法问题，属于 revit-selection-pickobject-filter 的触发面；本 skill 只负责'拾取 API 全部挂在 UIDocument 上'这一层级分工。",
+      "notes": "跨 skill 混淆诱饵：选择过滤器细节"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "既然 UIDocument 包装了 Document，我能不能把它当成 Document 的升级版，把模型的中间状态存在 UI 文档对象上方便取用？",
+      "expected_behavior": "纠正误解：UIDocument 不是 Document 的升级版，而是同一下层数据的两个视图——UI 层不含任何模型数据；把模型状态存在 UI 对象上是错误设计，模型状态应存 DB 层或独立存储。",
+      "notes": "边界：'包装即升级'的误解"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我写了个后台批处理没有界面，但流程里需要用户确认一些参数，能在 DB 层应用里弹个提示问一下吗？",
+      "expected_behavior": "指出判停：无 UI 语境且有交互需求——需求本身不成立，应改设计（预设参数/配置文件）而非硬调 UI API；无 UI 环境调用 UIDocument/拾取类 API 直接失败。",
+      "notes": "边界：无 UI 语境的交互需求不成立"
+    }
+  ]
+}

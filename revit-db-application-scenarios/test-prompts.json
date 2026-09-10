@@ -1,0 +1,55 @@
+{
+  "skill": "revit-db-application-scenarios",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我要做一个'文档打开时自动跑合规检查'的后台服务，不想要任何按钮、面板和弹窗，插件入口该选哪种？",
+      "expected_behavior": "应指路 IExternalDBApplication：OnStartup(ControlledApplication) 中订阅数据库事件（如 DocumentOpened）执行检查，OnShutdown 注销（配对）；返回值用 ExternalDBApplicationResult；.addin 清单 Type=DBApplication。它天然不添加任何 UI。",
+      "notes": "核心场景：无 UI 后台服务选型"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "IExternalDBApplication 和 IExternalApplication 长得很像，到底什么区别、各自适用什么场景？",
+      "expected_behavior": "应给出对照：IExternalDBApplication 用 ControlledApplication（DB 层），只能访问数据库事件、不能建 Ribbon/TaskDialog/任何 UI；IExternalApplication 用 UIControlledApplication，有 Ribbon 定制等 UI 能力。选型判据一句话：插件要不要长在界面上——要 UI 用 Application，纯后台陪模型数据库用 DBApplication。",
+      "notes": "核心场景：两入口对照与选型判据"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我在 DBApplication 的 OnStartup 里想创建一个 Ribbon 按钮方便用户触发检查，直接报错了，这是怎么回事？",
+      "expected_behavior": "应指出能力边界：ControlledApplication 没有任何 UI 能力，调 Ribbon/TaskDialog 类 API 会运行时异常（或编译依赖错误）；要 UI 必须换 IExternalApplication 入口（或组合一个 UI 插件做交互、DB 插件做后台）。",
+      "notes": "核心场景：DBApplication 的 UI 能力边界"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我的插件要在启动时建 Ribbon 面板、订阅 DialogBoxShowing 并保证 OnShutdown 注销，完整的 UI 侧应用样板怎么写？",
+      "expected_behavior": "不应激活本 skill。UI 侧应用（UIControlledApplication + Ribbon + 事件配对）的完整样板属于 revit-startup-shutdown-events。本 skill 讲 DB 侧无 UI 入口，二者以'有没有 UI'分界。",
+      "notes": "跨 skill 混淆诱饵：startup-shutdown-events"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我批量修改模型后想让用户一次 Ctrl+Z 全部撤销，事务组织上该怎么做？",
+      "expected_behavior": "不应激活本 skill。批量修改合并撤销属于 revit-transaction-hierarchy（TransactionGroup + Assimilate）。本 skill 讲插件入口选型，不涉及事务策略。",
+      "notes": "跨 skill 混淆诱饵：transaction-hierarchy"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我的后台合规检查发现问题了，想提示用户，但 DBApplication 里不能弹窗，有什么办法把结果告诉用户？",
+      "expected_behavior": "应给出无 UI 约束下的结果输出方案：把检查结果写日志或写入模型的共享参数/数据（用户后续可查看），需要即时弹窗交互则换用或组合 IExternalApplication（用 UI 能力展示）。也可说明取舍：保持后台纯静默 vs 引入 UI 插件的双入口组合。",
+      "notes": "边界：无 UI 约束下的用户触达"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "DBApplication 里能注册 IUpdater 做动态模型更新吗？注册注销放在哪里？",
+      "expected_behavior": "应确认可以：DBApplication 是'分配事件和/或更新'的容器，OnStartup 里通过 UpdaterRegistry 注册 Updater、OnShutdown 注销（与事件订阅同样的配对纪律）；提醒它只能响应事件/更新，不能在事件回调里直接开事务改模型（事件只读约束，衔接事件专题）。",
+      "notes": "边界：DBApplication 与 Updater 的组合"
+    }
+  ]
+}

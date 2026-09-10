@@ -1,0 +1,62 @@
+{
+  "skill": "revit-synchronize-with-central",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "插件要在批处理流程末尾自动执行和中心同步，SynchronizeWithCentral 怎么调？",
+      "expected_behavior": "激活后应给出 SynchronizeWithCentralOptions 的配置要点，并说明它始终执行保存到中心（即使无更改）。",
+      "notes": "A2 场景 1，本体"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "同步的时候中心模型被别人锁住了，程序就长时间挂在那里等，能不能不等直接返回？",
+      "expected_behavior": "激活后应说明中心锁定时默认等待重试，可用 SynchLockCallback 自定义（如放弃等待立即返回）。",
+      "notes": "A2 场景 2，锁定回调"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我只想拉取中心那边别人的更新下来看看，不想把我的东西写回中心，用哪个 API？",
+      "expected_behavior": "激活后应区分三个 API：ReloadLatest 只拉取、SynchronizeWithCentral 双向且无更改也保存、HasAllChangesFromCentral 查询。",
+      "notes": "A2 场景 3，三分工"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我要改工作共享文档里的一批图元，检出和放弃所有权的流程怎么走？",
+      "expected_behavior": "不应调用本 skill，理由：单会话内的检出/放弃是 revit-worksharing-api-decision-framework 的职责，本 skill 管会话与中心之间的同步。",
+      "notes": "跨 skill 混淆诱饵：会话内所有权 vs 会话间同步"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "代码里要构造指向 Revit Server 中心文件的 ModelPath，直接 new ServerPath 行不行？",
+      "expected_behavior": "不应调用本 skill，理由：ModelPath 的安全构造是 revit-serverpath-avoid 的领域，本 skill 只依赖其结果。",
+      "notes": "混淆诱饵：路径构造 vs 同步"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "明天天气怎么样，适合跑步吗？",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 完全无关的天气查询。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我这个文件是本地单机文档，保存用 Save 就行了吧，跟中心同步没关系？",
+      "expected_behavior": "不应调用本 skill，理由：单机文档无中心概念，Save/SaveAs 即可，同步 API 不适用。",
+      "notes": "边界：单机文档无中心"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "想给设计师做个手动触发的同步按钮，要不要直接程序化调用同步 API？",
+      "expected_behavior": "激活本 skill 但需说明边界：交互式场景让用户走 Revit 自带同步对话框（含完整用户确认流程）更合适，程序化同步用于自动化批处理。",
+      "notes": "边界：交互式 vs 自动化"
+    }
+  ]
+}

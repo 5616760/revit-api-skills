@@ -1,0 +1,55 @@
+{
+  "skill": "revit-mep-diameter-param",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "创建管道之后我想改直径，直接给 pipe.Diameter 赋值编译就报错了，正确写法是什么？",
+      "expected_behavior": "给出原则：Pipe.Diameter 等几何属性只读，修改必须走内建参数——element.get_Parameter(BuiltInParameter.RBS_PIPE_DIAMETER_PARAM).Set(0.5)；对 Diameter 属性赋值编译期即报错，不存在运行时侥幸。",
+      "notes": "核心差异点：只读属性+参数写入"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我要写个批量调径工具，按图元类型分派参数，圆风管和矩形风管分别用哪些内建参数？",
+      "expected_behavior": "给出参数映射：管道→RBS_PIPE_DIAMETER_PARAM；圆风管→RBS_DUCT_DIAMETER_PARAM；矩形风管→RBS_RECT_DUCT_WIDTH_PARAM + RBS_RECT_DUCT_HEIGHT_PARAM（成对出现，只改宽度漏改高度是典型错误）；建议封装成按类型分派的辅助方法避免硬编码参数名散落。",
+      "notes": "核心差异点：四类尺寸参数分派"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "代码评审时怎么判断 MEP 尺寸修改的代码写对了？Set 的时候还有什么要注意的？",
+      "expected_behavior": "给出审查要点：不存在对 Diameter 属性赋值的代码；参数名按图元类型正确分派；Set 时注意单位换算为英尺；批量场景确认无类型遗漏、无一因类型未覆盖而跳过或报错。",
+      "notes": "正面场景：代码评审检查"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我想知道怎么在两个连接件之间创建一段指定类型的管道，NewPipe 的入口怎么选？",
+      "expected_behavior": "不应激活本 skill。管段创建属于 revit-mep-curve-creation-entries 的触发面（三点入口矩阵：两点/两连接件/一点一连接件）；本 skill 专讲创建后改尺寸的参数通道。",
+      "notes": "跨 skill 混淆诱饵：创建入口"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我想把这段管道的系统类型和流体属性改一下，也是走内建参数吗？",
+      "expected_behavior": "不应激活本 skill。系统类型/流体属性是不同的参数域，不属于本 skill 的 MEP 几何尺寸参数组；不要假设一切 MEP 属性都只读——只有几何尺寸这类是'属性只读+参数可写'，读写前各自核对。",
+      "notes": "边界外场景：系统属性域"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我按毫米算好了新直径是 200，直接 Set(200) 进去模型里尺寸大得离谱，哪里错了？",
+      "expected_behavior": "指出单位坑：Set 的数值须换算为内部单位（英尺），200mm 应转换为英尺后再写入；这是公制项目使用该原则时的常见坑。",
+      "notes": "边界：英尺与毫米单位换算"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "既然 Diameter 是只读的，是不是 MEP 图元上所有几何相关属性都不能直接写？我能不能总结成通用规则？",
+      "expected_behavior": "纠正过度泛化：只有几何尺寸这类是'属性只读+参数可写'，不能假设一切 MEP 属性都只读——每个属性读写前各自核对；同样模式存在于 RebarBarType/RebarHookType、ThermalProperties 等，属'只读属性+参数写入'同构现象。",
+      "notes": "边界：不可过度泛化为全部属性"
+    }
+  ]
+}

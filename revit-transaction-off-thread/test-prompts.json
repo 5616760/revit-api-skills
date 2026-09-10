@@ -1,0 +1,55 @@
+{
+  "skill": "revit-transaction-off-thread",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我用 Task.Run 开了个后台线程，里面 new Transaction 改参数，抛 InvalidOperationException，提示事务不在 Revit API 上下文中，这个怎么解决？",
+      "expected_behavior": "应指出这是反模式：事务必须在 Revit API 上下文中开启，任何非 API 线程（Task.Run/Thread/后台线程）内开事务都会被拒绝。修复方案：实现 IExternalEventHandler（在其 Execute 方法里开事务改模型），用 ExternalEvent.Create(handler) 创建实例，后台线程只调 externalEvent.Raise()，Revit 会在安全时机于 API 上下文中执行 Execute。",
+      "notes": "核心场景：Task.Run 后台线程开事务"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我在 async 方法里 await 之后继续执行事务提交，有时成功有时抛 InvalidOperationException，很随机，这是什么原因？",
+      "expected_behavior": "应解释 async/await 的续延（continuation）可能脱离 Revit API 调用上下文执行，await 之后的代码相当于'外部线程'，事务调用时上下文校验不通过。修复方案同样是 IExternalEventHandler + ExternalEvent.Raise()，把修改逻辑放回 Revit 控制的执行点。",
+      "notes": "核心场景：async/await 续延上下文丢失"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我的窗体上有个后台计算完自动落库的 Timer 回调，里面开事务改 Revit 模型就异常，除了搬到主线程还有什么正规做法？",
+      "expected_behavior": "应指出 Timer/后台回调不在 API 上下文中，开事务必抛异常；正规做法是 External Events 框架：IExternalEventHandler.Execute 中执行事务，回调里只调 ExternalEvent.Raise() 排队，Revit 在合适时机执行。强调'线程外不能开事务'是硬性约束不是性能建议。",
+      "notes": "核心场景：Timer 回调开事务"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我想深入理解为什么模态对话框里开事务没问题、非模态对话框里就抛异常，这两种窗口的执行上下文差异是什么？",
+      "expected_behavior": "不应激活本 skill。模态/非模态对话框执行上下文的原理解析属于 revit-transaction-thread-context（模态对话框在 API 上下文内、非模态不在）。本 skill 聚焦线程外开事务的反例与 ExternalEvent 修复。",
+      "notes": "跨 skill 混淆诱饵：transaction-thread-context"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我在 DocumentClosing 事件回调里想修改模型数据，结果被 Revit 拦住了，事件回调里为什么不能改模型？",
+      "expected_behavior": "不应激活本 skill。DocumentClosing 是只读事件，回调中修改模型被禁止属于事件只读性问题，应走 revit-documentclosing-no-model-edit（改模型迁 IUpdater、交互走 ExternalEvent）。本 skill 讲的是线程上下文约束，不是事件只读约束。",
+      "notes": "跨 skill 混淆诱饵：documentclosing-no-model-edit"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "ExternalEvent.Raise() 调用之后我马上读取修改结果，读到的还是旧值，Raise 是同步执行的吗？",
+      "expected_behavior": "应说明 Raise() 是异步排队：只是通知 Revit 需要执行 handler，Execute 由 Revit 在空闲点调度，不能假设同步完成；紧接着的代码读不到修改结果。需要依赖执行结果时应把后续逻辑移入 Execute 或等待下一次调度。",
+      "notes": "边界：Raise 异步性"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我在 Idling 事件回调里开事务修改模型成功了，不是说事件回调外不能开事务吗？判断标准到底是什么？",
+      "expected_behavior": "应澄清判断标准是'是否在 Revit API 上下文中调用'而非'是否在主线程'：Idling 事件回调处于 API 上下文内（且不属只读事件），所以可以开事务；而 Task.Run/非模态回调虽可能运行在主线程之外或之上，但没有 API 上下文。Idling 中开事务可行但性能上有代价，应谨慎。",
+      "notes": "边界：API 上下文 vs 线程的判别"
+    }
+  ]
+}

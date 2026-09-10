@@ -1,0 +1,55 @@
+{
+  "skill": "revit-cancelable-events-propagation",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我在可取消事件回调里想阻止事件发生，直接 args.Cancel = true 就行吗？要不要先判断什么？",
+      "expected_behavior": "应给出纪律：先判断 args.Cancellable 是否为 true（事件支持取消才能取消），再设置 args.Cancel = true；对不可取消的事件设置 Cancel 无效果/不被支持。Cancel 一旦设置即生效且不可逆。",
+      "notes": "核心场景：Cancellable 前置判断"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我取消了一个可取消事件（比如 DocumentClosing），同一事件的其他订阅者还会被调用吗？后面的配套事件（DocumentClosed）还会触发吗？",
+      "expected_behavior": "应说明取消的传播效应：事件被取消会截断该事件后续订阅者的调用链（后面的 handler 不再收到通知），并且后置配套事件（如 Closed 对应 Opened→Closing→Closed 序列中的后置事件）也不会触发；设计多订阅者协作时要意识到取消的连带影响。",
+      "notes": "核心场景：取消截断后续订阅者与后置事件"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我想在 DocumentChanged 事件里取消刚才的修改，怎么取消不了？另外 FailuresProcessing 的取消写法好像不太一样？",
+      "expected_behavior": "应辨析两类事件：DocumentChanged 是通知型（不可取消）事件，事后通知、无法撤销修改；而 FailuresProcessing 的取消用 FailuresProcessingEventArgs 的 Cancel() 方法（方法调用，与可取消事件的 Cancel 属性是不同 API 形态）。",
+      "notes": "核心场景：不可取消事件与 Cancel() 方法形态"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我在 DocumentClosing 回调里想修改模型数据，被 Revit 拦截了，除了取消事件还有什么正规途径做修改？",
+      "expected_behavior": "不应激活本 skill。DocumentClosing 回调的只读约束与修改迁移方案（IUpdater/ExternalEvent）属于 revit-documentclosing-no-model-edit。本 skill 讲事件取消与传播，讲的是'阻止事件'，不是'事件里改模型'。",
+      "notes": "跨 skill 混淆诱饵：documentclosing-no-model-edit"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我的 DocumentOpened 事件订阅代码写在了命令 Execute 里，每次执行命令都多注册一份，该把注册放哪里？",
+      "expected_behavior": "不应激活本 skill。事件注册的位置与两步注册法（OnStartup 注册/OnShutdown 注销）属于 revit-event-registration-two-steps。本 skill 讲事件触发后的取消与传播行为。",
+      "notes": "跨 skill 混淆诱饵：event-registration-two-steps"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我在回调里把 args.Cancel 设成 true 之后又想反悔，重新赋值 false 行不行？",
+      "expected_behavior": "应说明取消不可逆：Cancel = true 一旦设置即生效，改回 false 不能撤销已发出的取消决定；正确姿势是先完成判断（条件是否满足）再决定是否设置 Cancel，不要先设置再反悔。",
+      "notes": "边界：取消不可逆"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "多个订阅者按顺序执行，前一个取消后后一个想'知道事件被谁取消了'，能从事件参数里拿到取消来源信息吗？",
+      "expected_behavior": "应说明传播截断意味着后面的订阅者根本不会被调用（而非收到一个'已取消'的通知）；事件参数不会携带'谁取消'的信息，且后置订阅者无感知是被截断还是没发生。多订阅者间的取消协作要在设计上避免依赖取消顺序。",
+      "notes": "边界：取消的可见性与多订阅者协作"
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "skill": "revit-failure-severity",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "注册自定义故障的时候，严重程度选 Warning 还是 Error？两者到底差在哪？",
+      "expected_behavior": "激活后应说明区分标准是用户能否忽略：Warning 可忽略、Error 不可忽略且强烈建议至少配一个解决方案。",
+      "notes": "A2 场景 1/语言信号"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "什么情况才用 DocumentCorruption 级别？它和普通 Error 有什么不一样？",
+      "expected_behavior": "激活后应指出 DocumentCorruption 是文件损坏专用、强制事务尽快回滚，且不能读文件信息、须先回滚、不能加 Resolution 三条硬约束。",
+      "notes": "A2 语言信号"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "Error 级别的故障需要给它配解决方案（Resolution）吗？不配会怎样？",
+      "expected_behavior": "激活后应回答强烈建议至少一个 FailureResolution，否则用户与处理器都无路可走，体验与收敛性受损。",
+      "notes": "A2 场景 3"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "为什么我发布的故障一出现事务就被强制回滚了？跟严重级别有关系吗？",
+      "expected_behavior": "激活后应解释 DocumentCorruption 级会强制事务回滚，检查是否误用了该级别。",
+      "notes": "A2 场景 4"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "预处理器里拿到故障之后怎么删警告、怎么标记已解决？",
+      "expected_behavior": "不应调用本 skill，理由：已发生故障的处置属于 FailuresAccessor 方法族（revit-failures-accessor），severity 只是分类决策知识。",
+      "notes": "跨 skill 混淆诱饵：severity 决策 vs accessor 处置"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "自定义故障的注册和发布流程是怎样的，PostFailure 在哪一步调？",
+      "expected_behavior": "不应调用本 skill，理由：注册发布流程是 revit-failure-definition-registration 的内容，本 skill 只是选 severity 值之前的决策。",
+      "notes": "混淆诱饵：流程 vs 选值"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "新手养猫需要注意些什么？",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 完全无关的生活咨询。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我们有个很严重的业务校验错误，想标成 DocumentCorruption 级别好引起用户重视，行不行？",
+      "expected_behavior": "不应调用本 skill 的该用法，理由：DocumentCorruption 不是普通严重错误的升级版，滥用会导致文件被强制回滚；业务严重错误应配 Resolution 的 Error。",
+      "notes": "边界：滥用 DocumentCorruption"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "这个警告 BuiltInFailures 里好像自带了，还需要我自己定级别吗？",
+      "expected_behavior": "不应调用本 skill，理由：内置故障的 severity 已内置，直接使用即可，无需自定义。",
+      "notes": "边界：内置故障免决策"
+    }
+  ]
+}

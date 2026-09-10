@@ -1,0 +1,55 @@
+{
+  "skill": "revit-updater-change-management",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我的 updater 记住了上次处理的 ElementId，用户关闭 Revit 第二天重新打开后，同样的图元 ID 对不上了，跨会话应该用什么标识？",
+      "expected_behavior": "应指出 ElementId 仅在会话内稳定，跨会话不可靠；跨会话/工作共享场景必须用图元的 UniqueId（稳定唯一标识）持久记录，下次 Execute 时按 UniqueId 比对定位图元。",
+      "notes": "核心场景：跨会话用 UniqueId"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "同一个中心模型多个协作者都装了我的插件，大家的 updater 都在响应修改，怎么避免重复处理或互相打架？",
+      "expected_behavior": "应给出共存纪律：updater 设计成可与其他更新器共存——触发器尽量精确（避免大范围误响应）、修改幂等（他人已做的修改不再重做），必要时在 Execute 中识别目标状态已满足就跳过，避免多更新器叠加放大修改。",
+      "notes": "核心场景：多更新器共存纪律"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "怎么保证我的 updater 被重复触发（同一修改事件多次到达）时不出错、不重复写？",
+      "expected_behavior": "应给出幂等纪律：Execute 开头先检查目标状态（参数是否已是期望值、几何是否已调整），已满足则直接返回不产生修改；幂等让重复触发变成无操作，是跨会话/协作场景下更新器可靠性的基础。",
+      "notes": "核心场景：幂等修改纪律"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我的 updater 修改后又触发自己更新，循环太多层被 Revit 禁用了，这个故障怎么排查和防御？",
+      "expected_behavior": "不应激活本 skill。无限循环故障与 Revit 的禁用机制、防御三件套（精确触发器 + ChangePriority + 幂等）属于 revit-updater-failure-modes。本 skill 讲跨会话标识与共存/幂等设计，循环故障的完整分析应指路该 skill。",
+      "notes": "跨 skill 混淆诱饵：updater-failure-modes"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我的 updater 注册了触发器但修改图元后 Execute 不触发，注册代码哪里有问题？",
+      "expected_behavior": "不应激活本 skill。触发器配置问题（RegisterUpdater + AddTrigger + 过滤器 + ChangeType）属于 revit-updater-registration-triggers。本 skill 假设触发正常，管理触发后的修改行为。",
+      "notes": "跨 skill 混淆诱饵：updater-registration-triggers"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "工作共享中心文件同步之后，我记录的图元 UniqueId 还能对上吗？同事在他机器上改的图元同步过来，UniqueId 会变吗？",
+      "expected_behavior": "应确认 UniqueId 在工作共享同步中保持稳定——这正是选它替代 ElementId 的理由：图元在中心/本地副本之间同步、跨会话重开，UniqueId 都不变；因此同步后按 UniqueId 比对仍能定位同一图元。",
+      "notes": "边界：UniqueId 的工作共享稳定性"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我的 updater 依赖上次会话保存的状态（记录哪些图元处理过），如果用户手动撤销了 updater 的修改，我的记录就过时了，这种状态管理怎么设计？",
+      "expected_behavior": "应建议以模型当前状态为准的可重建记录：Execute 中先检查图元实际状态再决定动作（状态驱动而非记录驱动），记录只作为加速缓存；用户撤销后下次触发会按实际状态重新处理，天然自愈。同时提醒：记录若存外部数据，撤销不会通知你（呼应外部数据不随事务回滚的约束）。",
+      "notes": "边界：撤销后的记录陈旧问题"
+    }
+  ]
+}

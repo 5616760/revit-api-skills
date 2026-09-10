@@ -1,0 +1,62 @@
+{
+  "skill": "revit-ribbon-control-types",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我给 SplitButton 设了 ToolTip，鼠标悬停完全不显示，是 API 没生效还是我写错了？",
+      "expected_behavior": "确认这是已知约束：SplitButton 的 ToolTip 设置无效（API 忽略该设置），不是用户代码错误；这是控件选型红线之一，无需排查代码。",
+      "notes": "核心差异点：SplitButton ToolTip 无效"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我想做一组互斥的模式切换按钮，比如线框/着色/真实三个视图样式，用三个 PushButton 行吗？",
+      "expected_behavior": "指出别用按钮模拟互斥（一组 PushButton 没有互斥语义）：互斥场景应选 RadioButtonGroup + 组内 ToggleButton；且提示要设在组内每个按钮上，整体给组设 ToolTip 无效。",
+      "notes": "核心差异点：互斥语义由 RadioButtonGroup 承载"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "面板上一组同级命令，PulldownButton 和 SplitButton 我该选哪个？两者有什么区别？",
+      "expected_behavior": "给出区分标准——是否存在默认动作：PulldownButton 下拉列出一组同级命令（每次都是全新选择、无默认项）；SplitButton 有默认项，点主体直接执行默认项，点小三角展开其余项。",
+      "notes": "核心差异点：有无默认动作"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "面板空间不够，想把两个小按钮并排放，StackedItems 有个数限制吗？",
+      "expected_behavior": "给出规则：StackedItems 可以把小控件并排堆叠，最多 3 个控件；并提醒 RadioButtonGroup 不能放进 StackedItems，否则运行时报错或布局异常。",
+      "notes": "核心差异点：StackedItems ≤3 红线"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我的插件有 5 个命令加一个关于按钮，大按钮放最左边还是哪里？超过三列怎么办？",
+      "expected_behavior": "不应激活本 skill。用户问的是控件在面板上的空间分配（大按钮位置、列数、滑出面板），属于 revit-ribbon-panel-layout 的触发面；本 skill 管'用哪种控件'，先选类型再布布局。",
+      "notes": "跨 skill 混淆诱饵：面板布局"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "按钮点下去之后要在事务里改图元参数，命令类的 Execute 里该怎么组织？",
+      "expected_behavior": "不应激活本 skill。命令内部逻辑、事务、参数读写不在本 skill 范围——控件只是入口，业务在别处；按命令执行语义类问题回答。",
+      "notes": "边界外场景：命令内部逻辑"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我想把 RadioButtonGroup 放进 StackedItems 里省空间，还有我往 StackedItems 里塞了 4 个控件，都有问题吗？",
+      "expected_behavior": "确认两条红线都违反：RadioButtonGroup 不能放进 StackedItems；StackedItems 最多 3 个控件——超限会运行时报错或布局异常；互斥组应独立放置，堆叠须裁到 3 个以内。",
+      "notes": "边界：堆叠相关的两条红线"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我在自己画的 WPF 窗口里要放单选和下拉控件，也按这套 Ribbon 控件规则来选吗？",
+      "expected_behavior": "明确边界：WPF/WinForm 自定义窗口内的控件是 Dialog 范畴，Ribbon 控件类型决策不适用；本 skill 只覆盖功能区面板上的 Ribbon 控件选型。",
+      "notes": "边界：自定义窗口控件不适用"
+    }
+  ]
+}

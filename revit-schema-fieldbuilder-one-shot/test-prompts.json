@@ -1,0 +1,55 @@
+{
+  "skill": "revit-schema-fieldbuilder-one-shot",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我缓存的 SchemaBuilder 已经 Finish 过了，运行时又调了一次 AddSimpleField 想追加字段，直接抛异常，这是为什么？",
+      "expected_behavior": "指出这是\"一次性 builder\"约束：SchemaBuilder.Finish() 完成后所有通过 AddSimpleField/AddArrayField/AddMapField 创建的字段不可再用 FieldBuilder 编辑，再调任何 AddXxxField 或 FieldBuilder 写方法都会抛异常；SchemaBuilder 完成后失效，不再是可操作的 builder 对象；正确做法是创建新 Schema（嵌版本号命名如 Xxx_v2）+ 数据迁移。",
+      "notes": "正面场景：Finish 后追加字段抛异常的核心反例"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "SetUnitType、SetDocumentation、SetSubSchemaGUID 这些 FieldBuilder 的方法应该在什么时机调用？我在 Finish 之后调用好像都不行了。",
+      "expected_behavior": "明确这些方法必须在 Finish 前设好：Finish 后再调会抛异常或不可用；这是设计可扩展存储架构时必须理解的 builder 生命周期——字段的所有属性定义集中在 Finish 前一次性完成。",
+      "notes": "正面场景：字段属性设置的时机窗口"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我想给已经上线的 Schema 加一个字段且不丢老数据，运行时有没有什么 API 能在原 Schema 上直接追加？",
+      "expected_behavior": "确认没有运行时追加 API：Revit 可扩展存储的不可变约束是特有的（区别于 JSON Schema、Entity Framework 等允许运行时修改字段定义的框架）；正确做法三步——创建 SchemaBuilder(\"Xxx_v2\") 包含原字段+新字段、Finish 前设好所有字段属性、遍历挂载旧 Entity 的图元做数据迁移（读旧→建新 Entity 赋值→SetEntity）。",
+      "notes": "正面场景：字段追加需求的正解（新 Schema + 迁移）"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "Schema 不可变之后，我该怎么设计整体的多版本兼容策略？比如用 SchemaList 维护 v1 到 v2 的版本关系。",
+      "expected_behavior": "不应激活本 skill 作为主答。多版本 Schema 数据兼容管理、版本化策略设计应走 revit-schema-immutable-after-finish：创建新 Schema 嵌版本号、从旧 Entity 读数据写入新 Schema 的 Entity、用 SchemaList 维护 v1→v2 兼容关系。本 skill 聚焦 AddSimpleField 后再改字段的抛异常反例与防御，不是版本化管理策略。",
+      "notes": "跨 skill 混淆诱饵：版本化策略 skill vs 一次性 builder 反例"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我第一次构建 Schema，还在定义字段阶段，AddSimpleField 和 AddArrayField 现在能随便用吗？",
+      "expected_behavior": "不应激活本 skill。Finish 前的字段定义完全可用，属于首次构建阶段的正常操作，应走 revit-extensible-storage-pipeline 的六步流水线（第 3 步定义字段）。本 skill 的边界明确排除 Finish 前的字段定义。",
+      "notes": "边界内排除场景：Finish 前的字段定义不属于本 skill"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "同样是失败，SchemaBuilder 的字段操作抛异常，而共享参数绑定 BindingMap.Insert 失败只是返回 false，这两种失败反馈怎么区分记忆？",
+      "expected_behavior": "对比两种失败反馈模式：SchemaBuilder 一次性（Finish 后写操作抛异常）vs BindingMap.Insert 静默返回 false（不抛异常）——前者是显式报错、后者是静默失败；这个对比是本 skill 与 revit-binding-insert-silent-fail 的显式分界，调试时先判断 API 属于哪种反馈模式。",
+      "notes": "边界情形：抛异常 vs 静默失败的反馈模式对比"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我的字段在 Finish 前调用过 SetDocumentation，但 Finish 之后数据读出来文档是空的，是 Finish 把它清掉了吗？",
+      "expected_behavior": "按失败模式排查：SetDocumentation/SetUnitType/SetSubSchemaGUID 未在 Finish 前正确设好会丢失或报错；确认调用发生在 builder.Finish() 之前且 FieldBuilder 引用有效；若确认 Finish 前已设好仍丢失，则按一次性 builder 约束重建新版本 Schema 验证，不要在已完成的对象上补设。",
+      "notes": "边界情形：字段属性丢失的归因排查"
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "skill": "revit-startup-shutdown-events",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我在 IExternalApplication 的 OnStartup 里订阅了 DialogBoxShowing，OnShutdown 里忘了注销，会有什么后果？",
+      "expected_behavior": "应指出对称性铁律：OnStartup 中每个 += 注册，OnShutdown 中必须用同一 handler 引用做对应的 -= 注销。漏注销的后果：handler 仍被引用导致内存泄漏（反复加载插件时尤其明显）、插件重载后事件重复触发（一次事件多轮回调）、更糟时 Revit 关闭过程中回调异常导致关闭卡住或崩溃。",
+      "notes": "核心场景：注册注销成对铁律"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "OnStartup 的参数到底是 UIControlledApplication 还是 UIApplication？它上面能拿到活动文档吗？",
+      "expected_behavior": "应说明：OnStartup/OnShutdown 的参数是 UIControlledApplication，提供事件访问与 Ribbon 定制能力；它不是 UIApplication，没有活动文档的模型访问能力。启动阶段本来也不该依赖具体文档。",
+      "notes": "核心场景：UIControlledApplication 上下文"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "反复加载卸载我的插件几次后内存暴涨，怀疑事件没退订，怎么排查和治理？",
+      "expected_behavior": "应给出排查路径：核对 OnStartup 注册的每个事件在 OnShutdown 是否有配对 -=（同一 handler 引用）；用日志确认启动注册数量与关闭注销数量一致；反复加载卸载数次观察内存无增长。治理手段是严格成对 + 必要时静态标志位防重复注册（加载失败后再加载的残留问题）。",
+      "notes": "核心场景：内存泄漏排查"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我要做一个无 UI 的后台服务监听文档事件做自动检查，IExternalDBApplication 和 ControlledApplication 的写法是什么？",
+      "expected_behavior": "不应激活本 skill。无 UI 的 DB 侧应用（IExternalDBApplication + ControlledApplication + ExternalDBApplicationResult）属于 revit-db-application-scenarios。本 skill 是 UI 侧应用（UIControlledApplication）的生命周期配对。",
+      "notes": "跨 skill 混淆诱饵：db-application-scenarios"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我在命令 Execute 里临时订阅了一个事件，命令结束后想立即退订，这种临时订阅的模式怎么写才安全？",
+      "expected_behavior": "不应激活本 skill。命令内（临时/常驻）订阅事件的注册时机问题属于 revit-event-registration-two-steps（其结论是常驻订阅不应放在命令里）。本 skill 只覆盖 OnStartup/OnShutdown 生命周期钩子内的配对纪律。",
+      "notes": "跨 skill 混淆诱饵：event-registration-two-steps"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "OnShutdown 里我想顺便把文档数据清理一下（操作可能已关闭的文档），可以吗？",
+      "expected_behavior": "应指出 OnShutdown 的操作纪律：只做退订和资源释放，不要访问可能已销毁的对象（如已关闭文档的图元）；关闭期访问已销毁对象会抛异常，导致 Revit 关闭过程出错。文档级清理应放在文档生命周期事件中完成。",
+      "notes": "边界：OnShutdown 的操作安全范围"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "插件第一次加载时 OnStartup 抛了异常，Revit 报插件错误，之后修好再加载，注册会不会出问题？要怎么防护？",
+      "expected_behavior": "应指出失败重载的残留风险：加载失败后再次加载可能出现重复注册（书未展开，实践需防护）；实用手段是静态标志位/静态构造保证注册只做一次，OnStartup 内对注册代码做异常防御，失败时不留下半注册状态。OnStartup 抛异常会导致插件加载失败。",
+      "notes": "边界：失败重载的残留防护"
+    }
+  ]
+}

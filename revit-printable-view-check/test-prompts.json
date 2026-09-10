@@ -1,0 +1,55 @@
+{
+  "skill": "revit-printable-view-check",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我调用了 doc.Export 导出 DWG，既没生成文件也没抛异常，脚本看起来成功了，这是怎么回事？",
+      "expected_behavior": "指出静默失败根因：Document.Export 的视图集合里每个视图必须 View.CanBePrinted == true，否则导出静默失败——无文件生成也无异常抛出；典型来源是混入了模板视图/隐藏视图，回溯检查传入视图集合。",
+      "notes": "核心差异点：静默失败症状"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我要写个批量导出 DWG 的脚本，视图集合来自遍历图纸，构建集合的阶段该怎么写才稳？",
+      "expected_behavior": "给出前判定模式：组装视图集合时逐个检查 if (view.CanBePrinted) 才加入，为 false 的记录日志（视图名+原因）而不是吞掉；若过滤后集合为空，停下报告'没有可导出的可打印视图'，不要调用 Export。",
+      "notes": "核心差异点：检查能力再操作"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "定时任务夜里批量出图，白天发现目录里缺了好几个文件，按什么顺序排查？",
+      "expected_behavior": "给出失败回溯顺序：先查视图集合是否为空/含不可打印视图（CanBePrinted）→ 目标路径写权限 → 视图集合与格式重载是否匹配；导出后应校验返回值与产物文件存在，夜间批处理无产物校验会把静默失败当成功。",
+      "notes": "正面场景：夜间批处理缺文件"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "导出 DWG 后文件是有了，但墙的图层名和颜色跟公司标准对不上，映射哪里配错了？",
+      "expected_behavior": "不应激活本 skill。产物已存在、问题在内容映射，属于 revit-dwg-export-tables 的触发面（ExportLayerTable 等映射表配置）；本 skill 只管导出前的可打印性前置检查。",
+      "notes": "跨 skill 混淆诱饵：导出映射配置"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我要导出 SAT 直接给别人传模型几何，需要先检查 CanBePrinted 吗？",
+      "expected_behavior": "不应激活本 skill。SAT/ADSK 这类不按视图集合导出的格式（直接导模型），其前置条件不同，本红线不适用；本 skill 只覆盖带视图集合的导出（DWG/DWF 类）。",
+      "notes": "边界外场景：无视图集合的导出"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我断言过视图集合非空才导的，为什么还是静默失败？",
+      "expected_behavior": "指出断言不足：只断言'集合非空'不检查可打印性——集合非空但全是不可打印视图（模板/隐藏视图），同样静默失败；必须逐视图检查 CanBePrinted。",
+      "notes": "边界：非空断言的盲区"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "用户反馈用打印功能出图失败，是不是也是 CanBePrinted 的问题？",
+      "expected_behavior": "区分边界：打印（Plot）失败走打印管理器，问题域不同，只有'可打印性'概念相通；本 skill 的静默失败红线只针对 Document.Export 导出路径，但 CanBePrinted 的前判定思路可参考。",
+      "notes": "边界：打印问题域"
+    }
+  ]
+}

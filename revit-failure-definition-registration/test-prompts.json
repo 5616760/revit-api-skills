@@ -1,0 +1,69 @@
+{
+  "skill": "revit-failure-definition-registration",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "插件校验发现业务问题，想像 Revit 原生那样在模型里给用户发一条自定义警告，而不是自己弹窗，怎么做？",
+      "expected_behavior": "激活后应给出 OnStartup 注册 FailureDefinition 到 FailureDefinitionRegistry、运行时 PostFailure 的完整流程，说明注册与发布的分工。",
+      "notes": "A2 场景 1"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "PostFailure 之后拿到的那个 key 是干嘛的？故障状态好转了能不能自动把警告撤掉？",
+      "expected_behavior": "激活后应说明 FailureMessageKey 用于 UnpostFailure(key) 撤销已发布故障，实现长事务中故障随条件满足自动消失。",
+      "notes": "A2 场景 2，key 生命周期"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "自定义的故障类型需要先注册吗？我直接在命令运行时注册为什么失败？",
+      "expected_behavior": "激活后应指出新故障必须在 OnStartup 注册，运行时注册会失败，并区分 FailureDefinitionId（全局身份）与 FailureMessageKey（发布实例钥匙）。",
+      "notes": "注册时机陷阱"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "批处理里同一个校验问题会反复出现，能不能只提示一次？",
+      "expected_behavior": "激活后应建议用 PostFailure 后保留 key、条件恢复时 UnpostFailure 的方式控制同一问题只提示一次。",
+      "notes": "A2 场景 4"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "事务结束时发布的故障是怎么被预处理器、事件和处理器一步步消费掉的？我想写自动处理逻辑。",
+      "expected_behavior": "不应调用本 skill，理由：本 skill 是生产故障（注册与发布），故障的消费处理属于 revit-failures-processing-steps 流水线。",
+      "notes": "跨 skill 混淆诱饵：生产故障 vs 消费故障"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我发布的自定义故障该选哪个严重级别？Warning 和 Error 有什么区别？",
+      "expected_behavior": "不应调用本 skill，理由：severity 等级选择是 revit-failure-severity 的决策知识，本 skill 只做注册流程与字段填写。",
+      "notes": "混淆诱饵：severity 选值"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "帮我写一个每天自动备份文件夹的脚本。",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit 故障定义注册完全无关的通用脚本请求。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我想提示用户墙没连接，BuiltInFailures 里好像已经有现成的这种警告了，还要自己注册一个吗？",
+      "expected_behavior": "不应调用本 skill 的注册流程，理由：内置 BuiltInFailures 已覆盖的场景直接使用即可，无需自定义注册。",
+      "notes": "边界：内置故障够用时不必自定义"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "现在文档是只读打开的链接上下文，我能在这里发布自定义警告吗？",
+      "expected_behavior": "不应调用本 skill 的发布步骤，理由：文件必须可修改才能发布故障，只读上下文发布会失败，应改用其他提示方式。",
+      "notes": "边界：只读文档不能发布"
+    }
+  ]
+}

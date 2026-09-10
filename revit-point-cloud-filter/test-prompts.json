@@ -1,0 +1,69 @@
+{
+  "skill": "revit-point-cloud-filter",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "点云数据太大，只想搜索/显示某个区域范围内的点，怎么按范围过滤？",
+      "expected_behavior": "激活后应介绍点云多平面过滤器（CreateMultiPlaneFilter）的构建方式，说明有效区是所有平面正半空间的交集、必为凸集。",
+      "notes": "A2 场景 1，本体"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "用户在界面用 PickBox 框选了一块点云区域，程序怎么把这块的点提取出来？",
+      "expected_behavior": "激活后应给出 PickBox 框选范围转多平面过滤器再取点的实现路径。",
+      "notes": "A2 场景 2"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我想过滤出 L 形走廊那一片的点，一个过滤器能表达出来吗？",
+      "expected_behavior": "激活后应指出多平面过滤器只能表达凸集，L 形凹区域需凸分解成多个过滤器再合并结果。",
+      "notes": "A2 场景 3，能力边界"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "点云分析程序性能很差，怀疑是全量遍历点导致的，从过滤角度怎么优化？",
+      "expected_behavior": "激活后应建议用空间过滤器限制搜索量，并说明过滤是开销也是收益、别盲目加。",
+      "notes": "A2 场景 4"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "怎么把扫描的点云文件导入 Revit，格式是自定义的需要写引擎吗？",
+      "expected_behavior": "不应调用本 skill，理由：点云的创建/访问/引擎选择是 revit-point-cloud-api 的职责，本 skill 只管访问时的空间过滤。",
+      "notes": "跨 skill 混淆诱饵：访问 vs 过滤"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "用 BoundingBoxIntersectsFilter 圈出和这块场地相交的墙图元，怎么做效率高？",
+      "expected_behavior": "不应调用本 skill，理由：这是图元过滤器（属性/几何包围盒判定），与点云的空间点过滤机制不同。",
+      "notes": "混淆诱饵：图元过滤器 vs 点云过滤器"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "周末去周边哪里玩比较好，推荐一下。",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 完全无关的休闲咨询。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我不想要空间过滤，只想按扫描强度值和点分类把噪点筛掉，这个过滤器行吗？",
+      "expected_behavior": "不应调用本 skill 的空间过滤器，理由：本过滤器只做空间几何判定，按强度/颜色/分类的数据属性筛选不归它管。",
+      "notes": "边界：非空间性过滤条件"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "建多平面过滤器时我是不是得把区域围成一个封闭的盒子，少一面都不行？",
+      "expected_behavior": "激活本 skill 并纠正边界：体量无需闭合，误以为必须封闭会多造不需要的平面，多余平面反而把区域切小；还要注意平面法线方向不能搞反。",
+      "notes": "边界：闭合体量误解 + 法线方向陷阱"
+    }
+  ]
+}

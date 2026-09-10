@@ -1,0 +1,55 @@
+{
+  "skill": "revit-regenerate-geometry-timing",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我用 NewFamilyInstance 创建完一根梁，马上读 element.Geometry，返回的是 null，图元明明创建成功了，为什么拿不到几何？",
+      "expected_behavior": "应指出新建图元的几何在事务提交（自动重生成）之前尚未生成：创建后立即读取 Geometry 得到 null/不完整是预期行为；必须先 doc.Regenerate() 再读取，或提交事务后读取。这是'几何生成时机'问题，不是创建 API 的错误。",
+      "notes": "核心场景：新建图元 Geometry 为 null"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我在一个事务里先创建梁再立刻计算它的体积做材料统计，几何数据什么时候才可用？正确顺序是什么？",
+      "expected_behavior": "应给出顺序纪律：创建图元 → doc.Regenerate() → 读取 Geometry/体积 → 继续后续逻辑 → 最后 Commit（提交时还有一次自动重生成）。在 Regenerate 之前读取几何会得到过时或空数据。",
+      "notes": "核心场景：先重生成后读几何的顺序"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我在事务里修改了墙的参数，马上读它的 Geometry 做检查，读到的是修改前的旧形状，几何什么时候刷新？",
+      "expected_behavior": "应说明几何快照停留在最近一次重生成时刻：修改参数后几何不会即时更新，必须再次 Regenerate 才反映新形状；提交事务时的自动重生成也会刷新，但提交前读取就拿到旧数据。",
+      "notes": "核心场景：修改后几何滞后"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我循环处理几百个图元，每个都 Regenerate 一次太慢了，想减少重生成次数提升性能。",
+      "expected_behavior": "不应激活本 skill。重生成调用频率的性能优化属于 revit-regenerate-cost（合并大事务、提交时自动重生成）。本 skill 讲几何可用时机，不讲成本控制。",
+      "notes": "跨 skill 混淆诱饵：regenerate-cost"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "Regenerate 抛 RegenerationFailedException 之后模型状态不一致，事务应该怎么处理？",
+      "expected_behavior": "不应激活本 skill。重生成失败的回滚处理属于 revit-regenerate-failure-rollback。本 skill 假设重生成成功，只关注几何生成的时机。",
+      "notes": "跨 skill 混淆诱饵：regenerate-failure-rollback"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "涉及 AutoJoinElements 的图元（梁墙自动连接），我修改后 Regenerate 了，为什么连接部位的几何还是不对？",
+      "expected_behavior": "应说明带连接的图元几何依赖 join 状态：重生成才能使连接关系生效并反映到几何上；若连接未按预期生成，检查重生成是否覆盖了相关图元（参与连接的双方都需要重生成），必要时对相关图元集合做重生成后再读取。",
+      "notes": "边界：连接图元的几何时机"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "重生成范围能不能只针对我关心的那几个图元，而不是整个文档？局部重生成怎么用？",
+      "expected_behavior": "应说明 Regenerate 支持传入图元集合做局部重生成（Regenerate(ICollection<ElementId>)），适合只刷新特定图元几何的场景；但依赖连接/被引用的图元可能需要一并包含，否则读到的仍是不完整状态。同时提醒局部重生成同样有成本考量（衔接 revit-regenerate-cost）。",
+      "notes": "边界：局部重生成与依赖完整性"
+    }
+  ]
+}

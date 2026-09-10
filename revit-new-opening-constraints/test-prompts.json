@@ -1,0 +1,62 @@
+{
+  "skill": "revit-new-opening-constraints",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "创建竖井洞口的时候抛异常了，提示跟标高有关，是什么问题？",
+      "expected_behavior": "定位为竖井重载的隐式约束：topLevel 必须高于 bottomLevel，标高序反了直接抛异常；修正顺序后先验证再调用。",
+      "notes": "正面场景：竖井标高序约束。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "墙上开洞传了两个坐标点还是失败，报的是矩形角点的问题。",
+      "expected_behavior": "验证 pntStart 与 pntEnd 必须是能构成矩形的角点（如左下角加右上角），任意两点不行；修正坐标后调用成功。",
+      "notes": "正面场景：墙洞口矩形角点约束。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "要写一个通用的洞口创建工具，怎么在调用前就避开这些异常？",
+      "expected_behavior": "按先验证后调用的防御策略改写代码：调用前显式验证几何关系（标高顺序、共面、成矩形）与依赖存在性，不把希望寄托在运行时异常消息上。",
+      "notes": "正面场景：前置校验的防御策略。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "在楼板上开洞，NewOpening 的板类重载和竖井重载怎么区分？",
+      "expected_behavior": "不应调用本 skill，理由：这是重载选型问题（按主体类型选签名），应激活 NewOpening 重载 skill；本 skill 管选定重载后的参数约束验证。",
+      "notes": "混淆诱饵：重载选型 vs 约束验证。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "读一下已有洞口的边界是矩形还是曲线。",
+      "expected_behavior": "不应调用本 skill，理由：这是洞口边界读取问题（IsRectBoundary 分支），应激活洞口边界读取 skill。",
+      "notes": "混淆诱饵：创建约束 vs 边界读取。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "这周的周报怎么写显得不像在划水？",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 开发完全无关的职场写作请求。",
+      "notes": "完全无关请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "墙上想开个圆形洞，参数怎么调都报错，是我的点没构成矩形吗？",
+      "expected_behavior": "边界判别：这不是参数校验问题而是能力边界——墙上只支持矩形洞口，非矩形需求应判停改走编辑墙轮廓路径；调参数绕不过 API 限制。",
+      "notes": "边界场景：参数问题 vs 能力边界。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我给的两个点在对角线上，应该能构成矩形了吧，为什么还抛异常？",
+      "expected_behavior": "边界判别：角点必须是对角关系（如左下加右上）且能形成矩形；若两点在同一水平或竖直线上（同一条边）则不构成矩形角点，仍会抛异常，需检查坐标组合。",
+      "notes": "边界场景：对角点约束的具体判定。"
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "skill": "revit-reference-stable-handle",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "插件重启之后要恢复用户上次拾取的那个面接着干活，怎么把这个面记住？",
+      "expected_behavior": "用 ConvertToStableRepresentation() 把面的 Reference 序列化成字符串持久保存，重启后 ParseFromStableRepresentation() 还原为相同 Reference 继续使用。",
+      "notes": "正面场景：跨会话恢复拾取。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "要把用户选中的哪个面存进数据库配置里，下次打开文档还能精确还原到同一个几何。",
+      "expected_behavior": "说明 ElementId 是会话内整数重启即失效，必须走 Reference 的稳定字符串表示做持久化，并在还原后校验非 null。",
+      "notes": "正面场景：Reference 字符串化存档。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "创建线边界条件和面边界条件分别要传什么类型的参照？能混着用吗？",
+      "expected_behavior": "按四类参照（曲线端点/整条曲线/面/边）说明与创建 API 一一对应：线边界条件要线参照、面边界条件要面参照，混用会失败或产生错误结果。",
+      "notes": "正面场景：参照类型与创建 API 对应。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "把项目里所有的尺寸标注按类型分类统计一下。",
+      "expected_behavior": "不应调用本 skill，理由：这是尺寸识别与分类需求（Curve 形状与 References 数量推断），应激活尺寸识别 skill。",
+      "notes": "混淆诱饵：参照语义 vs 尺寸分类统计。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "从这点出发沿竖直方向找最近的相交构件。",
+      "expected_behavior": "不应调用本 skill，理由：这是光线投影最近命中查询需求，应激活 ReferenceIntersector 相关 skill。",
+      "notes": "混淆诱饵：稳定句柄 vs 投影查询。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "推荐几本入门 C# 的书。",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 开发任务无关的学习咨询请求。",
+      "notes": "完全无关请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "只在本次会话里引用一下这个图元，用 Reference 是不是更稳妥？",
+      "expected_behavior": "边界判别：单次会话内的临时引用用 ElementId 更简单，Reference 稳定表示是跨会话持久化的重武器，杀鸡不用牛刀；仅当需要几何级（面/边/端点）引用时才用 Reference。",
+      "notes": "边界场景：轻量引用 vs 重武器的选择。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "存的稳定字符串在模型修改后解析失败了，是不是机制不可靠？",
+      "expected_behavior": "边界判别：稳定表示依赖几何表示树的稳定性，几何被重建后旧字符串可能解析失败，属预期行为；生产代码必须做解析失败的兜底处理而不是当 bug 修。",
+      "notes": "边界场景：几何重建后的解析失效。"
+    }
+  ]
+}

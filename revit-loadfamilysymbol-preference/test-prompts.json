@@ -1,0 +1,55 @@
+{
+  "skill": "revit-loadfamilysymbol-preference",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "放梁只需要一种型号，加载整个族文件太重了，有没有更轻的加载方式？",
+      "expected_behavior": "激活后应推荐 LoadFamilySymbol(fileName, symbolName) 只加载单个符号，配合 NewFamilyInstance 完成单类型放置。",
+      "notes": "正面场景：单类型按需加载"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "插件第二次运行时 LoadFamily 返回了 false，是不是加载失败了要报错？",
+      "expected_behavior": "激活后应解释返回 false 是'已加载'的状态信号而非异常，可据此跳过重复加载实现幂等。",
+      "notes": "正面场景：false 语义辨析"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "代码里写死族文件路径老找不到 rfa，库路径怎么解析？",
+      "expected_behavior": "激活后应指导用 GetLibraryPaths 解析库路径再拼文件名定位 .rfa。",
+      "notes": "正面场景：定位 rfa 文件"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "LoadFamilySymbol 传了类型名却加载不到，名字看起来没错啊",
+      "expected_behavior": "激活后应指出 symbolName 必须与 FamilySymbol.Name 完全一致，差一个字都加载不到。",
+      "notes": "正面场景：名称精确匹配陷阱"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我要在项目里编辑族几何然后回载让实例更新，用 LoadFamily 之后的流程怎么走？",
+      "expected_behavior": "不应调用本 skill，理由：'编辑+回载'流程（EditFamily→修改→LoadFamily→改 Symbol）属于 revit-family-document-edit-paths 的触发面，本 skill 是一次性加载符号使用的场景，用途相对立。",
+      "notes": "跨 skill 混淆诱饵：编辑回载 vs 一次性加载"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "推荐一个适合写技术博客的静态网站框架",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 无关的建站咨询请求。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我不确定要用的类型叫什么名字，能不能先只加载一个试试？",
+      "expected_behavior": "不应调用本 skill，理由：类型名不确定需先 LoadFamily 加载整个族再遍历符号确定名称，这是本 skill 明确排除的场景（'类型名不确定需先遍历'不适用按需加载）。",
+      "notes": "边界：类型名未知时不适用单符号加载"
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "skill": "revit-analytical-model-exception",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我的插件一跑到 GetCurve 就抛 InapplicableDataException 崩溃，图元明明有分析模型啊，这是为什么？",
+      "expected_behavior": "指出根因：没有先判定 AnalyticalModel 的 IsSinglePoint/IsSingleCurve 就直接调用 GetCurve/GetPoint，对形态不匹配的图元（如点状构件调 GetCurve、线状构件调 GetPoint）会抛 InapplicableDataException；这是运行时崩溃级错误。",
+      "notes": "核心场景：异常根因诊断"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "foreach 遍历一堆墙和柱子的分析模型时程序随机崩，堆栈指向 GetCurve，我想知道 InapplicableDataException 在什么情况下被抛出？",
+      "expected_behavior": "解释该异常属于形状/数据不适用类错误：AnalyticalModel 形态与调用的取值方法不匹配（点型 vs 曲线型）即抛出；遍历异构集合时若不做形态判定必然命中；可用 try-catch 兜底但正解是先探测。",
+      "notes": "正面场景：批量遍历崩溃"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "GetPoint 和 GetCurve 分别什么时候能用？我在 brace 上调 GetPoint 报 InapplicableDataException，在 column 上又正常，搞不清规则。",
+      "expected_behavior": "按 SKILL.md 反例说明：取值方法必须与 AnalyticalModel 形态匹配，不能凭图元类别猜测；正确姿势是先读 IsSinglePoint/IsSingleCurve 再决定调 GetPoint 还是 GetCurve，而不是按 Wall/Column 类别硬编码。",
+      "notes": "核心差异点：形态匹配规则"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "帮我写一个通用的安全读取分析模型几何的封装方法，要求对任何图元都不崩，三分支怎么设计？",
+      "expected_behavior": "不应激活本 skill。用户要的是正面封装写法（探测在前的守卫分支设计），应走 revit-analytical-model-guard-clause；本 skill 是反例/异常诊断视角，不提供封装方案本体。",
+      "notes": "跨 skill 混淆诱饵：正反面互补 skill"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我想知道 AnalyticalModel 的 Raw/Active/Approximated 三种曲线语义有什么区别，取哪层做碰撞检查合适？",
+      "expected_behavior": "不应激活本 skill。这是分析模型几何三件套与分层语义问题，应走 revit-analytical-model-geometry；本 skill 只覆盖取值方法误用导致的 InapplicableDataException。",
+      "notes": "跨 skill 混淆诱饵：几何语义"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我的代码里已经 try-catch 了 InapplicableDataException，程序不崩了，这样处理可以吗？还是必须改成先判断再取值？",
+      "expected_behavior": "说明 try-catch 只能防崩不能纠正逻辑：吞掉异常会掩盖形态误判，正确做法仍是 IsSinglePoint/IsSingleCurve 探测在前、分支取值在后；异常捕获只适合日志/兜底，不能作为主逻辑。",
+      "notes": "边界：兜底捕获 vs 探测在前的取舍"
+    }
+  ]
+}

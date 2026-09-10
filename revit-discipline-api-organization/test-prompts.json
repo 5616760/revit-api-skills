@@ -1,0 +1,69 @@
+{
+  "skill": "revit-discipline-api-organization",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我的插件要同时支持建筑、结构和 MEP 三类项目，写代码之前怎么预估每个规程里哪些功能有 API 可用？",
+      "expected_behavior": "用四维度切分预判能力边界：图元类维（结构有 Truss/Rebar、MEP 有 Pipe/Duct/Connector）、分析层维（仅 Structure 有 AnalyticalModel）、拓扑维（仅 MEP 有系统概念）、规程设置维（PipeSettings 等），据此产出架构层的通用层+规程扩展层设计。",
+      "notes": "正面场景：跨规程通用插件选型（A2 场景 1）。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "管道能不能像结构梁那样读分析模型、做分析连接？客户提了这么个需求。",
+      "expected_behavior": "按分析层维度判定：MEP 图元永远没有分析模型，\"管道做结构分析连接\"在 API 层面就不成立，应在方案期排除并给用户替代方向。",
+      "notes": "正面场景：跨维度能力预判（A2 场景 2）。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "结构图元能不能像管道那样查它属于哪个系统？",
+      "expected_behavior": "按拓扑维度判定：系统归属（MEPSystem/Connector/LogicalConnection）是 MEP 独有维度，结构和建筑图元没有\"系统\"概念，应改用其他关联方式。",
+      "notes": "正面场景：反向跨维度问题。"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "刚接触 Revit API，Architecture、Structure、MEP 这三块命名空间大概是怎么分工的？有没有个整体地图？",
+      "expected_behavior": "给出三大规程各有独立命名空间与类层次、但共享统一 Element 基类模型的地图式讲解：底座（过滤/参数/事务）共用，领域差异体现在各维度特有 API。",
+      "notes": "正面场景：学习地图（A2 场景 3）。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "柱的分析位置具体用 GetPoint 还是 GetCurve？要不要先判定再取？",
+      "expected_behavior": "不应调用本 skill，理由：这是分析模型三件套的具体使用方法（按类型分派+前置探测），属于 revit-analytical-model-geometry；本 skill 只做规程间的选型预判，不展开具体方法论。",
+      "notes": "跨 skill 混淆诱饵：整体地图 vs 具体维度展开。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "从风机设备出发，用 ConnectorManager 和 AllRefs 把整个供风系统遍历出来的代码怎么写？",
+      "expected_behavior": "不应调用本 skill，理由：这是 MEP 拓扑维度的具体遍历实现，属于 revit-mep-connector-system-topology；本 skill 负责告诉你这个维度存在，不负责具体代码路径。",
+      "notes": "跨 skill 混淆诱饵：维度预判 vs 拓扑遍历实现。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "Revit 2024 比 2023 新增了哪些建模功能？",
+      "expected_behavior": "不应调用本 skill，理由：产品功能对比与 API 规程组织无关。",
+      "notes": "完全无关的通用请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "在 BeamSystem 上找不到 AnalyticalModel 相关成员，是我引用的 API 版本太老了吗？",
+      "expected_behavior": "本 skill 可给方向性预判（聚合图元把分析能力下沉到成员，属维度设计而非版本问题），但具体打散方法应转入 revit-beamsystem-analytical-absence 或 revit-analytical-model-supports。边界：地图回答\"为什么没有\"，不展开\"具体怎么查\"。",
+      "notes": "边界场景：版本问题 vs 维度缺失的判别，跨 skill 衔接点。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "过滤图元、读写参数、开事务这些通用功能，是不是每个规程要各写一套？",
+      "expected_behavior": "不需要：底层统一 Element 基类模型保证跨规程通用操作（过滤/参数/事务）共用一套；规程差异只在领域层补各维度特有 API。agent 应明确\"底座共享、领域分层\"的边界。",
+      "notes": "边界场景：底座共享 vs 规程差异的分界。"
+    }
+  ]
+}

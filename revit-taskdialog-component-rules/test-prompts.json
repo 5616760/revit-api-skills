@@ -1,0 +1,62 @@
+{
+  "skill": "revit-taskdialog-component-rules",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "TaskDialog 的标题我直接写了'导出 DWG'，同事说不符合规范，标题到底该怎么写？",
+      "expected_behavior": "给出标题格式规范：'<功能名称> — <短标题>'，首字母大写，例如 'DWG 导出 — 选择版本'；不能只用动词（如'导出'），也不要让标题重复命令链接的文本。",
+      "notes": "核心差异点：标题格式"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "一个纯通知的对话框，用户看完只能关掉，按钮该放 OK 还是 Close？",
+      "expected_behavior": "按语义选按钮：Close 用于纯信息任务对话框（没有操作、只是通知）；OK 仅当问题确实能用'OK'回答（如'处理完成'）时使用——给纯信息框放 OK 会让用户以为有操作要确认。",
+      "notes": "核心差异点：按钮语义三问"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我的流程一旦开始就中止不了，但对话框里习惯性放了 Cancel 按钮，这样有问题吗？",
+      "expected_behavior": "指出违规：Cancel 仅当任务真正可以被取消（有可中止的进行中操作）时使用；给不可取消的流程放 Cancel，点了也没用，误导用户。",
+      "notes": "核心差异点：Cancel 的真可取消前提"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "想让用户勾选'不再提示'，标准写法是 Don't show me this message again 吗？",
+      "expected_behavior": "给出标准措辞：DNSMA 复选框的官方标准文案是 'Do not show me this message again'——不缩写成 Don't；缩写与官方标准措辞不一致。",
+      "notes": "核心差异点：DNSMA 不缩写"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我需要一个带文本框、下拉列表和几个复选框的参数输入表单，TaskDialog 里这些组件怎么放？",
+      "expected_behavior": "不应激活本 skill。多控件输入表单超出 TaskDialog 能力，属于 revit-taskdialog-vs-dialog 的触发面（需自定义 WPF/WinForm Dialog）；本 skill 只讲选定 TaskDialog 后各组件怎么写。",
+      "notes": "跨 skill 混淆诱饵：输入表单选型"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "命令执行失败时我想弹一个 Revit 风格的系统错误框，是在 Execute 里手写 TaskDialog 吗？",
+      "expected_behavior": "不应激活本 skill。命令失败反馈应走 message + Result 触发系统自动错误框，与手写 TaskDialog 是两条反馈路径（前者自动、后者显式）；本 skill 讲手写 TaskDialog 的组件规范。",
+      "notes": "边界外场景：系统错误框路径"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "多个操作并列时用命令链接还是底部提交按钮？我一直分不清 CommandLinks 和 CommitButtons。",
+      "expected_behavior": "给出区分：命令链接（CommandLinks）是整行可点击的说明，多个操作并列时用；提交按钮（CommitButtons）是底部标准按钮——两者别混用；判断主线是'用户对这个框能做什么'。",
+      "notes": "边界：命令链接 vs 提交按钮"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我想做一个带取消按钮的进度显示框，跑批的时候实时显示进度，TaskDialog 按这套规则写可以吗？",
+      "expected_behavior": "明确边界：非模态窗口、进度显示（带取消的进度对话框）不在本 skill 范围——那是 External Events/非模态框架的领域；TaskDialog 是模态消息框，装不下进度场景。",
+      "notes": "边界：进度框属非模态范畴"
+    }
+  ]
+}

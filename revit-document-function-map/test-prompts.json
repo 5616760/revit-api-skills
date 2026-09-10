@@ -1,0 +1,62 @@
+{
+  "skill": "revit-document-function-map",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "刚上手 Revit 二次开发，想在代码里读项目的默认长度单位，翻图元和过滤器翻半天没找到，这东西到底挂在哪？",
+      "expected_behavior": "激活后把需求归类到'设置'功能域，指向 Document.GetUnits()，说明单位不挂在图元上而挂在 Document 的设置域。",
+      "notes": "A2 场景1+2：不知道能力从哪个对象取、在图元层翻找项目级资源方向错了。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "创建楼板之前要先拿到楼板的类型对象，我该从 Document 的哪里拿？总不能全文档过滤一遍吧。",
+      "expected_behavior": "激活后把需求归类到'类型集合'功能域，走文档的类型集合属性（如 FloorTypes）直达获取，不走全文档过滤。",
+      "notes": "A2 场景 + 书中案例3：类型集合的直达入口。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "Document 这个类太大了，都有哪些能力？比如项目地点信息、材质集合、保存关闭，这些都在它身上吗？",
+      "expected_behavior": "激活后按九大功能域（设置/地点位置/类型集合/视图/检索/文件/图元管理/事件/状态）给出地图式导航，教用户'先定域再找入口'。",
+      "notes": "A2 语言信号：'Document 能干什么'的地图式问题。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我想在代码里弹出个对话框让用户选东西，这算 Document 的功能还是别的对象的？感觉层级有点乱。",
+      "expected_behavior": "不应调用本 skill，理由：需求是 UI 层交互（选择、提示），属于 Document 与 UIDocument 的 UI/DB 分工边界问题，应触发 revit-document-vs-uidocument。",
+      "notes": "跨 skill 混淆诱饵：D 组邻居 revit-document-vs-uidocument 的触发面——skill 的 A2 段明确'先分清对象层级，再进本地图'。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "拿到 WallType 对象之后，怎么从这个类型一层层找到它所属的族和类别？",
+      "expected_behavior": "不应调用本 skill，理由：已经拿到对象，讨论的是类型-实例四层模型内部的导航链（Symbol→Family→Category），应触发 revit-category-family-symbol-instance。",
+      "notes": "跨 skill 混淆诱饵：D 组邻居 revit-category-family-symbol-instance 的触发面（四层导航链）。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "帮我在 Excel 里做一个项目材料汇总表，按楼层统计混凝土方量。",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 无关的办公表格请求。",
+      "notes": "完全无关的通用请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我想找出项目里所有'高度大于 4 米'的墙，这个需求 Document 上有现成的入口吗？",
+      "expected_behavior": "应激活本 skill 并触发判停条件：'按条件找一批图元'属于图元检索功能域，地图只负责指路，具体过滤交给检索类 skill（FilteredElementCollector 路径），不要在 Document 层找不存在的直达入口。",
+      "notes": "边界场景：'定域指路'与'检索展开'的分界——本 skill 只做地图导航不做过滤细节。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "读材质我知道走 Settings.Materials 了，但我想改其中一个材质的名字，也在这张地图里找吗？",
+      "expected_behavior": "应激活本 skill 做域定位（设置域入口正确），但编辑具体材质属图元管理/材质专属操作的执行细节，本 skill 只确认入口路径，具体修改流程交对应执行类 skill；同时提示该操作需在事务内进行。",
+      "notes": "边界场景：'入口导航'与'具体操作实现'的边界，B 段明确排除已知道入口后讨论实现的情况。"
+    }
+  ]
+}

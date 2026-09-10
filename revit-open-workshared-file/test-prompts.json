@@ -1,0 +1,62 @@
+{
+  "skill": "revit-open-workshared-file",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "插件要打开中心文件做批量统计，全量加载太慢太占内存，能不能只加载部分工作集？",
+      "expected_behavior": "激活后应给出 GetUserWorksetInfo 预读工作集信息 → 筛选目标 WorksetId → WorksetConfiguration(CloseAll 后只 Open 目标) → OpenDocumentFile 的流程。",
+      "notes": "A2 场景 1，本体"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "后台批处理服务打开工作共享文件，机器内存有限，加载范围怎么控制？",
+      "expected_behavior": "激活后应按 WorksetConfiguration 只打开所需用户工作集的方案，并说明系统工作集永远自动打开不受配置控制。",
+      "notes": "A2 场景 2"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "想以只读方式打开别人的中心文件避免冲突，打开方式上有什么讲究？",
+      "expected_behavior": "激活后应说明打开之时的配置（OpenOptions、工作集按需加载），以及 GetUserWorksetInfo 必须在打开前调用的时机要点。",
+      "notes": "A2 场景 3"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "文件打开之后要跟中心交换变更，中心被锁时还会一直等，这个怎么处理？",
+      "expected_behavior": "不应调用本 skill，理由：打开之后的同步（ReloadLatest/SynchronizeWithCentral/锁回调）是 revit-synchronize-with-central 的领域。",
+      "notes": "跨 skill 混淆诱饵：打开在前 vs 同步在后"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "服务器迁移后有几百个 rvt 文件的链接路径全失效了，能不能不打开文件批量修好？",
+      "expected_behavior": "不应调用本 skill，理由：不打开文件的离线批量操作是 revit-transmissiondata-offline 的场景，且那是链接路径不是工作集加载。",
+      "notes": "混淆诱饵：都是打开前预读，对象不同（工作集 vs 外部链接）"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "帮我查一下下周去成都的机票价格。",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 完全无关的出行查询。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我打开的就是个单机文件，没什么工作集，也用得着 WorksetConfiguration 吗？",
+      "expected_behavior": "不应调用本 skill，理由：单机（非共享）文件无工作集概念，直接 Open 即可。",
+      "notes": "边界：单机文件直接打开"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我按教程只加载了两个工作集，结果后面检出和修改老失败，是不是打开方式错了？",
+      "expected_behavior": "激活本 skill 并说明边界：需要编辑全模型的场景过度收窄加载范围会导致后续检出/修改失败，不如全量打开——加载范围要按用途权衡。",
+      "notes": "边界：收窄加载的副作用"
+    }
+  ]
+}

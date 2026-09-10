@@ -1,0 +1,55 @@
+{
+  "skill": "revit-analytical-link-hub",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我在用 AnalyticalLink.Create 想把一根梁和一根柱的分析模型连起来，直接把两个图元的 ElementId 传进去报错了，这个方法的参数到底要传什么？",
+      "expected_behavior": "指出 AnalyticalLink.Create 的参数是 Hub 的 ElementId（分析模型端点 Hub），不是物理图元的 ElementId；应先对两端图元的 AnalyticalModel 调 GetHub() 解析出 Hub，再用 Hub 的 ElementId 创建 AnalyticalLink。",
+      "notes": "核心差异点：参数是 Hub Id 而非图元 Id"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "如何用 Revit API 在两个结构构件之间创建分析链接 AnalyticalLink？我搜到这个类但不确定 Hub 是怎么来的。",
+      "expected_behavior": "给出流程：先获取图元的 AnalyticalModel，再调 GetHub() 得到端点 Hub，最后用两个 Hub 的 ElementId 调 AnalyticalLink.Create 创建链接；说明 Hub 是分析模型的连接端点抽象。",
+      "notes": "正面场景：创建分析链接全流程"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我用 GetHub() 拿到梁的 Hub 之后创建 AnalyticalLink，但发现同一根梁好像被好几个 Hub 共享，这是怎么回事？会出问题吗？",
+      "expected_behavior": "说明一根梁可以被多个 Hub 共享是正常机制（多个成员汇交于同一节点），创建 AnalyticalLink 时按 Hub 对连接即可，不要求 Hub 与图元一一对应。",
+      "notes": "核心差异点：Hub 共享语义"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "AnalyticalLink 和 AnalyticalModel 什么关系？我想遍历一根柱子上所有的分析链接，应该从哪个对象入手？",
+      "expected_behavior": "说明 AnalyticalLink 表示两个分析模型端点（Hub）之间的连接关系，须从图元的 AnalyticalModel 出发解析 Hub，再围绕 Hub 建立/查询 AnalyticalLink；给出按 Hub 维度组织链接的思路。",
+      "notes": "正面场景：概念关系与遍历入口"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我想用 ConnectorManager 遍历一段风管上的所有连接件，把物理上连在一起的构件都找出来，AllRefs 怎么用？",
+      "expected_behavior": "不应激活本 skill。用户问的是 MEP 物理连接件体系（ConnectorManager/Connector/AllRefs），属于 revit-mep-connector-system-topology 的触发面；AnalyticalLink 是结构分析模型层面的连接，与 MEP Connector 是两套体系。",
+      "notes": "跨 skill 混淆诱饵：MEP 连接件拓扑"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "怎么从墙的分析模型里把那条曲线取出来？GetCurve 和 GetCurves 有什么区别？",
+      "expected_behavior": "不应激活本 skill。这是分析模型几何读取（GetPoint/GetCurve/GetCurves 按图元类型分派）问题，应走 revit-analytical-model-geometry；本 skill 只覆盖 AnalyticalLink/Hub 连接创建。",
+      "notes": "跨 skill 混淆诱饵：分析模型几何"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我拿到两个图元的 ElementId，想判断它们之间有没有已经存在的 AnalyticalLink，然后决定要不要新建，怎么写？",
+      "expected_behavior": "提醒不能直接用图元 Id 判断链接：应先把两个图元解析为 AnalyticalModel 再取 GetHub()，在 Hub 层面查询/匹配现有 AnalyticalLink，避免重复创建；链接的锚定单位是 Hub 而非图元。",
+      "notes": "边界：图元 Id 与 Hub Id 混用的模糊地带"
+    }
+  ]
+}

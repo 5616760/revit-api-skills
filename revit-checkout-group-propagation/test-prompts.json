@@ -1,0 +1,69 @@
+{
+  "skill": "revit-checkout-group-propagation",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我只检出了组里的一个门，结果整个组都被锁住了，为什么多检出了这么多图元？",
+      "expected_behavior": "激活后应解释 CheckoutElements 的连带检出机制：为保证请求图元可编辑，Revit 自动检出必要关联图元（如组内图元检出整个组）。",
+      "notes": "A2 场景本体，语言信号：为什么多检出了"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "检出功能的界面要展示实际检出了哪些东西，能按请求的图元列表直接显示吗？",
+      "expected_behavior": "激活后应指出不能假设检出范围等于请求范围，UI 与日志应按实际检出范围核对处理。",
+      "notes": "A2 场景 1"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "同事说我锁住了他正在改的图元，可我根本没动过那个图元，怎么回事？",
+      "expected_behavior": "激活后应从连带检出角度排查团队冲突：检出请求可能传递到组等关联图元，导致持有了并未直接请求的所有权。",
+      "notes": "A2 场景 2"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "批量检出前想评估影响面，会不会波及大量组图元？",
+      "expected_behavior": "激活后应说明以组为代表的传播机制，提示评估检出传递的波及范围再做批量操作。",
+      "notes": "A2 场景 3"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "A 链接里嵌套的 B 链接，卸载 A 的时候 B 会跟着卸载吗？",
+      "expected_behavior": "不应调用本 skill，理由：嵌套链接随父链接卸载是加载层的传递性（revit-nested-link-unload），与本 skill 的所有权层传递作用域对立。",
+      "notes": "跨 skill 混淆诱饵：同属传递性家族但层级不同"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "检出 500 个图元的时候 API 该怎么调用性能才好？",
+      "expected_behavior": "不应调用本 skill，理由：批量调用的性能原则属于 revit-worksharing-api-decision-framework，本 skill 讲的是检出的传递性行为。",
+      "notes": "混淆诱饵：性能原则 vs 传播行为"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "给我推荐一个简单好做的家常菜谱。",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 完全无关的烹饪咨询。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "检出的是散的普通墙，没有编组，检出范围是不是就等于我请求的那些？",
+      "expected_behavior": "激活本 skill 但需说明边界：非组、无依赖的普通图元检出范围通常就是请求本身，但机制是可能而非只有组，仍建议按实际结果核对。",
+      "notes": "边界：普通图元仍建议核对"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我只是读一下图元的参数，也会触发连带检出吗？",
+      "expected_behavior": "不应调用本 skill，理由：只读操作不涉及检出，没有所有权传递问题。",
+      "notes": "边界：只读不检出"
+    }
+  ]
+}

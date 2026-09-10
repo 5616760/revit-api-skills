@@ -1,0 +1,69 @@
+{
+  "skill": "revit-beamsystem-analytical-absence",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我在 BeamSystem 上找 AnalyticalModel 相关的成员，编译期就说方法不存在，是不是我引用的 Revit API 版本不对？",
+      "expected_behavior": "指出这不是版本问题而是设计如此：BeamSystem 无 AnalyticalModel 属性，聚合系统图元把分析能力下沉到成员（每根梁）；解决方案是调用 GetBeamIds() 检索梁集合，再逐根梁查询分析信息。",
+      "notes": "核心差异点：编译期找不到方法≠版本问题"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "为什么 Grid 这种系统级图元也查不到 AnalyticalModel？是 API 缺了这个功能吗，还是我的用法有问题？",
+      "expected_behavior": "指出这不是 API 缺失而是聚合图元的设计规律：与 BeamSystem 同理，系统级/聚合图元不直接暴露分析模型，分析能力下沉到成员；遇未知图元先按'打散到 leaf 图元再查询'假设试探。",
+      "notes": "核心差异点：聚合规律的泛化（Grid 类似情况）"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "BeamSystem 这个类的 API 设计为什么不让它直接带分析模型？我理解不了这种成员下沉的设计，写代码总觉得别扭。",
+      "expected_behavior": "解释聚合图元设计原理：BeamSystem 是容器/系统图元，分析信息按成员（每根梁）分发；容器不替成员汇报分析数据，所以成员不存在是设计而非缺陷；正确姿势 GetBeamIds() 打散再逐梁查询。",
+      "notes": "正面场景：理解聚合下沉原理"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我想查一根墙的 AnalyticalModelSupport 集合，顺便判断它 IsElementFullySupported，直接在墙的分析模型上调就可以吧？",
+      "expected_behavior": "不应激活本 skill。单体图元（墙/板/单梁）的支撑查询直查即可，无需打散——这是 revit-analytical-model-supports 支撑查询决策表的领域；本 skill 只处理 BeamSystem 这类聚合图元'没有分析模型'的问题。",
+      "notes": "跨 skill 混淆诱饵：单体图元支撑查询"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "怎么读取一根梁的分析模型的曲线和端点位置？我需要拿它的几何信息做计算。",
+      "expected_behavior": "不应激活本 skill。用户要读单图元分析几何信息，属于 revit-analytical-model-geometry 的触发面；本 skill 只讲哪些图元根本没有可读的分析模型。",
+      "notes": "跨 skill 混淆诱饵：分析几何读取"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "绘制梁系统时我选了墙做支撑，现在想用代码读梁系统的支撑信息，该怎么做？",
+      "expected_behavior": "不应激活本 skill：梁系统支撑信息的常规查询（含 GetBeamIds 打散的 happy path）是 revit-analytical-model-supports 的触发面（其 trigger 明确含'梁系统支撑、GetBeamIds'）；本 skill 只管'在 BeamSystem 上找不到分析模型成员'的失败经验与聚合原理。",
+      "notes": "跨 skill 混淆诱饵：常规支撑查询 vs 反例原理"
+    },
+    {
+      "id": "should-not-trigger-04",
+      "type": "should_not_trigger",
+      "prompt": "写通用支撑分析工具时，哪些图元可以直接查 AnalyticalModelSupports，哪些要先分解？有没有一张分派表可以参考？",
+      "expected_behavior": "不应激活本 skill：单体直查/聚合先分解的分派规则是 revit-analytical-model-supports 的查询决策表领域；本 skill 只提供其中'聚合图元为何没有分析模型'的原理支撑。",
+      "notes": "跨 skill 混淆诱饵：分派规则属 supports 决策表"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "既然 BeamSystem 没有分析模型，有没有办法给它补一个，或者用 API 把系统级的分析信息汇总出来？",
+      "expected_behavior": "明确边界：API 不提供给 BeamSystem 补分析模型的能力，聚合图元也不会替成员汇报分析信息；唯一出路是 GetBeamIds 打散到成员层查询，结果按需自行聚合回系统级报告。",
+      "notes": "边界：API 不提供的能力不可硬做"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我在做整体结构的支撑校核，顺手对选中的所有图元统一调了 IsElementFullySupported，里面混着梁系统和普通梁，为什么梁系统那边结果不对？",
+      "expected_behavior": "解释原因：IsElementFullySupported 是通用预检但也要在 leaf 层做——对 BeamSystem 直接调用不适用；主答 revit-analytical-model-supports 的分派规则（BeamSystem→GetBeamIds 分解后逐梁应用，墙/板/单体→直接查），本 skill 提供'BeamSystem 无分析模型'的根源解释，两 skill 协同是合理结果。",
+      "notes": "边界：通用预检在聚合图元上的失效"
+    }
+  ]
+}

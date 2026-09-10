@@ -1,0 +1,48 @@
+{
+  "skill": "revit-family-element-visibility",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "门族里那个可旋转的门体，我想让它只在平面视图里出现，三维视图里隐藏，API 怎么设？",
+      "expected_behavior": "激活后应给三步流程：构造 FamilyElementVisibility，设 IsShownInPlan=true、IsShownIn3D=false，对门体调 SetVisibility 显式应用。",
+      "notes": "正面场景：按视图类型控制族图元显隐"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "族里的辅助线想在粗略详细程度下隐藏、精细程度才显示，能按详细程度控制吗？",
+      "expected_behavior": "激活后应说明双轴控制的详细程度轴：Coarse/Medium/Fine 三级标志设置后仍需调 SetVisibility 应用。",
+      "notes": "正面场景：按详细程度显隐"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "ModelText 和模型线这些族内图元也能用 FamilyElementVisibility 控制显隐吗？",
+      "expected_behavior": "激活后应确认可见性控制适用于族内多类图元（ModelText/ModelCurve/三维几何），并强调不调用 SetVisibility 不生效。",
+      "notes": "正面场景：多类图元应用"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "怎么在当前视图里用过滤器把机电管线统一隐藏掉？",
+      "expected_behavior": "不应调用本 skill，理由：视图级过滤是视图层控制（视图过滤器/图形覆盖），而本 skill 是族定义层的可见性控制（随族走、影响所有引用视图）——两者机制不同层。",
+      "notes": "跨 skill 混淆诱饵：视图层过滤 vs 族定义层可见性"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "帮我把视频转成 GIF 动图",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 无关的多媒体处理请求。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我在族编辑器里设置了 SetVisibility，为什么项目里有的视图还是显示了不该显示的图元？",
+      "expected_behavior": "激活后应辨析边界：族定义层可见性与视图层控制（过滤器/隐藏图元）分层互补——若项目视图另有过滤规则，可能与族层设置叠加；需先确认冲突来自哪一层再调整，不能断言 SetVisibility 失效。",
+      "notes": "边界：族层与视图层控制叠加冲突"
+    }
+  ]
+}

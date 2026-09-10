@@ -1,0 +1,55 @@
+{
+  "skill": "revit-point-cloud-api",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "现场激光扫描的点云数据想导入 Revit 模型里做参照，代码上怎么创建？",
+      "expected_behavior": "激活后应给出格式受支持时的客户端 API 两步：PointCloudType.Create → PointCloudInstance.Create，并提示 Create 需要引擎标识符。",
+      "notes": "A2 场景 1，两条路径选择"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "客户有一套私有点云格式，想在 Revit 里显示和选取，是不是要实现 IPointCloudEngine？",
+      "expected_behavior": "激活后应说明格式不受支持时走引擎 API：实现并注册 IPointCloudEngine 解析自有格式，先判格式再选路径。",
+      "notes": "A2 场景 2，引擎路线"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "怎么读取点云里的点做和模型的偏差分析？GetPoints 能拿到数据吗？",
+      "expected_behavior": "激活后应介绍 GetPoints 读取点数据做分析，并警告大数据量全量取点必须配合过滤器否则性能灾难。",
+      "notes": "A2 场景 3"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "点云太大了，我只想处理用户框选出来那一片区域的点。",
+      "expected_behavior": "不应调用本 skill，理由：按空间范围过滤点云点是 revit-point-cloud-filter 的职责（GetPoints 的 filter 参数与多平面过滤器）。",
+      "notes": "跨 skill 混淆诱饵：访问 vs 过滤"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "电脑最近老是蓝屏，帮我看看可能是什么原因。",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit 点云 API 完全无关的硬件故障咨询。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我们的点云是常见的受支持格式，导进来展示一下就行，也需要写引擎吗？",
+      "expected_behavior": "不应调用本 skill 的引擎 API 路线，理由：格式受支持且只需展示时客户端 API 两步即可，引擎 API 是过度设计。",
+      "notes": "边界：引擎路线的适用前提"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "书上说点云引擎支持 E57、las 这些格式，现在还能直接照着清单用吗？",
+      "expected_behavior": "激活本 skill 但需说明边界：书基于 Revit 2014，新版支持格式清单与引擎接口变化较大，应以当前 SDK 与格式列表为准。",
+      "notes": "边界：2014 版格式清单的时代局限"
+    }
+  ]
+}

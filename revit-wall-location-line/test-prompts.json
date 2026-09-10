@@ -1,0 +1,62 @@
+{
+  "skill": "revit-wall-location-line",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "建墙的时候想让墙按核心层外表面去对齐基准线，这个位置关系怎么设？",
+      "expected_behavior": "通过 WALL_KEY_REF_PARAM 整型参数设置定位线档位（核心面外部为 4），并说明 0-5 各档位含义，确认它是整型编码而非枚举。",
+      "notes": "正面场景：按指定定位线创建墙。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "把已有墙的定位线从墙中心线改成核心中心线，墙大概会平移多少？",
+      "expected_behavior": "用 CompoundStructure.GetOffsetForLocationLine() 从复合结构精确算出目标档位相对中心定位线的偏移量，不用试错法。",
+      "notes": "正面场景：改档位预算位移。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "程序里要把墙的方向翻过来，Orientation 反一下怎么做？",
+      "expected_behavior": "调用 Wall.flip() 把 Orientation 从 (0,1,0) 翻成 (0,-1,0)，并说明翻转保持定位线锚定关系、不产生镜像副本。",
+      "notes": "正面场景：墙体方向翻转。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "改了一个墙类型的保温层厚度，全楼的墙都跟着变了，怎么只影响一面墙？",
+      "expected_behavior": "不应调用本 skill，理由：这是复合结构类型级修改的隔离问题（ElementType.Duplicate），应激活复合结构层 skill。",
+      "notes": "混淆诱饵：定位线档位 vs 层结构修改。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "手里只有标高的 ElementId，没有 Level 对象，能直接建墙吗？",
+      "expected_behavior": "不应调用本 skill，理由：这是 Wall.Create 重载选择问题（按参数形态选签名），应激活墙创建重载 skill。",
+      "notes": "混淆诱饵：定位线 vs 创建重载。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "SQL 查询怎么去掉重复行？",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 开发完全无关的数据库问题。",
+      "notes": "完全无关请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "API 里是不是有个 LocationLine 枚举可以直接转？我在参数里只看到数字。",
+      "expected_behavior": "边界判别：WALL_KEY_REF_PARAM 是整型 0-5 编码不是枚举，直接当枚举转会静默选错档位；按整型读写并对照含义表。",
+      "notes": "边界场景：整型编码被误当枚举。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "改了定位线之后，墙本身的几何形状会不会跟着变？比如变厚？",
+      "expected_behavior": "边界判别：改定位线改变的是墙体位置（整体平移让选定线落到参考点上），墙体相对自身定位线的几何关系不变，厚度、层结构都不受影响。",
+      "notes": "边界场景：位置协议 vs 几何关系的区分。"
+    }
+  ]
+}

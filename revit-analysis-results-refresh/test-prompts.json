@@ -1,0 +1,48 @@
+{
+  "skill": "revit-analysis-results-refresh",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我用 SpatialFieldManager 写入了分析结果，但模型一改字段值就没了/视图上不更新，怎么让分析结果跟着模型变化自动刷新？",
+      "expected_behavior": "指出 SpatialFieldManager 不会自动刷新/重算：需要自建更新机制；两条路线二选一——IUpdater（动态模型更新器，同事务内响应几何变化）或 DocumentChanged 事件（事务后响应，更新需两步撤销）；按需求选一条，不要混用。",
+      "notes": "核心场景：不自动刷新的根因与两条路线"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我想在用户拖动墙的时候实时更新空间场分析结果，IUpdater 和 DocumentChanged 事件哪个更适合？",
+      "expected_behavior": "对比两条路线：IUpdater 是 DMU 机制，在同一事务内响应变更可保持数据一致；DocumentChanged 在事务提交后触发，更新需另开事务形成两步撤销；实时联动且要撤销干净应选 IUpdater。",
+      "notes": "核心差异点：同事务 vs 两步撤销"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我用 SpatialFieldManager.UpdateField 更新了结果但渲染还是旧的，需要手动调 Regenerate 吗？这块的刷新链路是怎样的？",
+      "expected_behavior": "说明刷新链路：写入/更新字段后视图与数据不会自行联动，需要通过 DMU（IUpdater）或事件（DocumentChanged）驱动的更新逻辑重新计算并写回 SpatialFieldManager；文档更新器注册后由 Revit 调用 Execute，不能自己手动触发。",
+      "notes": "正面场景：刷新链路澄清"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我用 PartUtils.CreateParts 创建零件后马上查不到，事务提交后才看得到，这是什么机制？",
+      "expected_behavior": "不应激活本 skill。这是 PartMaker 延迟生成问题，应走 revit-partmaker-term；本 skill 只覆盖空间场分析结果的可视化刷新机制。",
+      "notes": "跨 skill 混淆诱饵：延迟可见性主题相近"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "ExternalEvent 怎么在 Revit 外部线程里安全地改模型？我有异步计算结果要写回去。",
+      "expected_behavior": "不应激活本 skill。外部事件/线程安全属于通知与更新时机的另一主题；本 skill 讲的是分析结果刷新的 IUpdater/DocumentChanged 选型，不展开 External Events 机制。",
+      "notes": "跨 skill 混淆诱饵：更新时机相近"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我同时注册了 IUpdater 又订阅了 DocumentChanged，两边都写 SpatialFieldManager，结果偶发死循环/重复更新，怎么办？",
+      "expected_behavior": "指出 IUpdater 与 DocumentChanged 是二选一的关系：同时启用会互相触发导致重复更新；应按一致性/撤销需求保留一条路线，移除另一条，这是设计层面的约束而非可叠加的能力。",
+      "notes": "边界：两条路线混用的模糊地带"
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "skill": "revit-collector-result-retrieval",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我想判断文档里到底有没有机械空间这个类别的图元，现在写的是 ToElements().Count > 0，总觉得有点浪费，有没有更好的写法？",
+      "expected_behavior": "激活后按存在性检查选 FirstElement()/FirstElementId()——找到一个就停、空即不存在，不物化全集合，替换掉 ToElements().Count 的写法。",
+      "notes": "A2 场景1：存在性检查纠结 Count 写法。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "同一段代码里我先用过滤结果算了个数，后面又遍历了一遍结果，没改任何条件但程序明显变慢，collector 的结果是不是有缓存？",
+      "expected_behavior": "激活后指出 collector 不缓存结果，同一 collector 上每次取结果调用都触发完整重新过滤；修正为第一次取完存变量、后续只读变量。",
+      "notes": "A2 场景2 + 书中警告的重复提取性能陷阱。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我过滤完之后只需要拿 ID 去做删除和移动，根本不需要 Element 对象本身，取结果的时候有讲究吗？",
+      "expected_behavior": "激活后按用途选方法：只需要 ID 做后续 API 调用时优先 ToElementIds()（更轻），避免 ToElements() 物化整个对象集合。",
+      "notes": "A2 场景3：只要 ElementId 不要对象。"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "过滤结果可能有十几万条，我只想边遍历边处理，不想一次把整个列表都攥在内存里，用什么方式取？",
+      "expected_behavior": "激活后选流式路径：GetElementIdIterator() 等迭代器或 LINQ 延迟执行，边遍历边处理，不占整块结果内存。",
+      "notes": "A2 场景4：大结果集流式遍历。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我的过滤器链是一个按参数值过滤的 SlowFilter 直接怼在全文档上，跑一次要很久，帮我看看是哪层的问题。",
+      "expected_behavior": "不应调用本 skill，理由：慢发生在过滤执行维度（SlowFilter 未与 QuickFilter 组合），不是结果物化维度，应触发 revit-filter-quick-slow-logical。",
+      "notes": "跨 skill 混淆诱饵：C 组邻居 revit-filter-quick-slow-logical 的触发面——skill 的 B 段明确警告'过滤不缓存'与'过滤器快慢'是两个维度要分开诊断。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "为什么我的收集器在三维视图里返回是空的？模型里明明有很多东西。",
+      "expected_behavior": "不应调用本 skill，理由：问题是构造函数的可见性语义（视图级只含可见图元），不是取结果方式，应触发 revit-view-vs-document-collector。",
+      "notes": "跨 skill 混淆诱饵：C 组邻居 revit-view-vs-document-collector 的触发面（collector returns nothing）。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "帮我把这个 CSS 网格布局改成响应式的，手机端要显示成单列。",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 完全无关的前端开发请求。",
+      "notes": "完全无关的通用请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我已经拿到一个具体的梁对象了，只想知道它能不能通过我的过滤器，还要再建个 collector 跑一遍吗？",
+      "expected_behavior": "应激活本 skill 并触发判停条件：已有具体图元只判断匹配性，直接用 PassesFilter(element) 即可，流程结束，不需要 collector 取集合路径。",
+      "notes": "边界场景：单元素判断是本 skill 五种方式里 PassesFilter 的专属分支。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我循环里每次都要拿'当前符合条件的最新集合'，模型中途会被别的命令改动，这种情况下存变量复用会不会拿到旧数据？",
+      "expected_behavior": "应激活本 skill 并区分两种语义：'同一过滤结果的多次使用'必须单次物化存变量；但若需要'反映模型变化的重新过滤'，则应显式新建 collector 重新执行，二者意图不同，按真实需求选择并写明理由。",
+      "notes": "边界场景：'复用结果'与'重新查询'意图模糊，考验对'不缓存'规则的正确理解而非机械套用。"
+    }
+  ]
+}

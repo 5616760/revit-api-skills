@@ -1,0 +1,55 @@
+{
+  "skill": "revit-data-storage-paths",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我要在模型图元上存自定义数据，不知道该用共享参数还是可扩展存储，两者分别适合什么场景？",
+      "expected_behavior": "给出核心决策轴\"数据消费者是谁\"：消费者是用户/UI/明细表/tag/ODBC 导出 → 必须共享参数（可定义 visible、绑定到图元类别、能排入明细表）；消费者是第三方程序且需结构化（Array/Map/Entity 嵌套）、隐藏、权限控制 → 必须可扩展存储（对 Revit UI 完全不可见、通过 Schema/Entity 与 AccessLevel 机制访问）。",
+      "notes": "正面场景：两条存储路径的总选型"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我要存一个\"成本\"参数，要求出现在墙明细表里并能 ODBC 导出，可扩展存储能做到吗？",
+      "expected_behavior": "明确可扩展存储对 UI 和导出完全不可见——选错会导致数据无法在明细表中使用；该需求必须选共享参数并绑定到 Walls 类别，成本参数即可出现在墙明细表并可 ODBC 导出。",
+      "notes": "正面场景：明细表/导出消费者 → 共享参数"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "每根管道要存\"上次检查日期 + 检查人 ID + 历史记录数组\"，用户不应在属性窗口看到，共享参数能满足吗？",
+      "expected_behavior": "说明共享参数只能做键值标签式存储、字段类型有限（int/double/string/ElementId 等），无法满足 Array 嵌套字段；该需求应选可扩展存储（ExtensibleStorage Schema 存结构化检查记录、对用户完全隐藏）；共享参数 visible 属性只控制可见性，不提供结构化能力。",
+      "notes": "正面场景：结构化隐藏数据 → 可扩展存储"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我已经决定用共享参数存数据了，绑定到类别的时候该用 TypeBinding 还是 InstanceBinding？",
+      "expected_behavior": "不应激活本 skill。该问题是共享参数内部的绑定模式（Type/Instance）选型，应走 revit-binding-type-vs-instance：TypeBinding 同类型实例共享值、InstanceBinding 每实例独立值。本 skill 是共享参数 vs 可扩展存储的两条路径选型，选完共享参数后的绑定模式问题不在其内。",
+      "notes": "跨 skill 混淆诱饵：绑定模式选型 vs 存储路径选型"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我已经选定用可扩展存储了，SchemaBuilder 建 Schema、设权限、创建 Entity 赋值的完整代码流程是什么？",
+      "expected_behavior": "不应激活本 skill。选定可扩展存储后的实现细节应走 revit-extensible-storage-pipeline 的六步流水线（建 Schema → 设权限 → 定义字段 → 创建 Entity → 赋值 → 挂载图元）。本 skill 只做选型决策。",
+      "notes": "跨 skill 混淆诱饵：六步实现 vs 选型决策"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "数据要隐藏但只是简单的键值对，共享参数定义成 visible=false 和可扩展存储，都能隐藏，到底选哪个？",
+      "expected_behavior": "说明隐藏需求的交叉地带：共享参数 visible 属性可控可见性（visible=false 即隐藏），可扩展存储天然不可见；区分点是结构复杂度——简单键值且无需结构化 → 共享参数更轻量；需嵌套/Array/Map 或权限控制 → 可扩展存储；两者都有 GUID 但用途不同（共享参数 GUID 唯一标识定义，Schema GUID 标识架构）。",
+      "notes": "边界情形：visible=false 共享参数 vs 天然不可见的可扩展存储"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我想给一批特殊类别的图元绑共享参数，有些类别怎么都绑不上，这是选共享参数的坑吗？",
+      "expected_behavior": "指出这是共享参数路径的已知边界：共享参数不能绑定到全部图元类别——部分类别不支持参数绑定；若目标类别无法绑定且数据消费者只有第三方程序，可考虑改走可扩展存储（直接 SetEntity 到图元，不受类别绑定限制）。",
+      "notes": "边界情形：类别绑定限制触发路径重选"
+    }
+  ]
+}

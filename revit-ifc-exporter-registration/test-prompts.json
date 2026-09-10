@@ -1,0 +1,62 @@
+{
+  "skill": "revit-ifc-exporter-registration",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我实现了 IExporterIFC 接口，第二个注册的插件在启动时抛了 IllegalOperationException，这是怎么回事？",
+      "expected_behavior": "解释单例规则：ExporterIFCRegistry 是应用程序级单例、先到先得，一个 Revit 会话只允许注册一个 IExporterIFC；第二个插件注册时抛 IllegalOperationException 是预期行为，应用 try/catch 捕获并向用户报告'本会话已被其他插件注册'，而不是崩溃。",
+      "notes": "核心差异点：单例先到先得"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "公司要求 IFC 导出符合我们自己的 schema 扩展，我想接管 Revit 的 IFC 导出过程，注册的时机和入口在哪里？",
+      "expected_behavior": "给出模式：实现 IExporterIFC 接口完成自定义写出逻辑，在外接程序 OnStartup 中调用 ExporterIFCRegistry.RegisterIFCExporter(exporter)——注册必须发生在任何 IFC 导出之前。",
+      "notes": "核心差异点：OnStartup 注册时机"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "注册自定义 IFC 导出器之后，用户从界面菜单导出 IFC 和我用 Document.Export 导出的 IFC，走的分别是哪套实现？",
+      "expected_behavior": "明确接管范围：注册成功后，无论用户从 UI 还是 API（Document.Export）触发 IFC 导出，走的都是这个自定义实现；测试要覆盖两条入口，不能以为只有 API 入口被接管。",
+      "notes": "核心差异点：UI 与 API 双入口接管"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "我要按自研的轻量化格式导出模型几何和材质，听说可以用 CustomExporter 遍历节点树，具体怎么组织？",
+      "expected_behavior": "给出 CustomExporter 路线：通过 RenderNode 节点树回调（GeometryNode/MaterialNode/LightNode 等）逐节点渲染模型，在回调中写出数据；导出内容与过程完全由插件控制，可自定义写出任意格式。",
+      "notes": "正面场景：CustomExporter 自研格式"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我就想常规地把当前模型导出成 IFC 文件，该用 Document.Export 的哪个重载、配什么选项？",
+      "expected_behavior": "不应激活本 skill。常规格式导出能满足需求时应直接用内置 Document.Export 重载，属于 revit-document-export-formats 的触发面——先确认内置不够用，再走接管路线。",
+      "notes": "跨 skill 混淆诱饵：内置导出决策"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我只是想调整 DWG 导出的图层映射和颜色，让导出结果符合公司标准，需要换掉导出器吗？",
+      "expected_behavior": "不应激活本 skill。只调导出选项/映射表无需替换导出器，属于 revit-dwg-export-tables 的映射表配置层；本 skill 是替换导出实现本身的接管层，介入深度完全不同。",
+      "notes": "跨 skill 混淆诱饵：配置层 vs 接管层"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "能不能让两个 IFC 导出器并存，运行时按需切换？或者我在命令执行的时候再注册也行吧？",
+      "expected_behavior": "明确两条边界：单例先到先得规则不允许'多导出器并存按需切换'，一个会话只有一个 IExporterIFC；在 OnStartup 之外或 IFC 导出已发生之后才注册，接管不生效或行为未定义。",
+      "notes": "边界：并存切换与注册时机"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我的导出器注册成功了，但用户反馈导出的 IFC 还是老的样子，怀疑是别人的插件抢了先，怎么排查？",
+      "expected_behavior": "给出排查思路：按'服务第一'原则检查插件加载顺序与是否已被抢先注册——第一个完成注册的插件获得本会话 IFC 导出权；确认本插件注册是否实际成功（或是否捕获到了冲突异常），再触发一次导出验证产物特征。",
+      "notes": "边界：注册冲突的排查"
+    }
+  ]
+}

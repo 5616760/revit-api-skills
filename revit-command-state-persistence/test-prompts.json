@@ -1,0 +1,62 @@
+{
+  "skill": "revit-command-state-persistence",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我的命令类里加了个私有字段存上次的选择，第一次运行赋了值，第二次运行读出来是空的，字段为什么每次都被清空？",
+      "expected_behavior": "指出反直觉事实：Revit 在点击时 new 你的命令类 → 调 Execute → 返回后销毁实例，命令对象的生命周期只有一次 Execute 调用那么长；类里定义的字段（List、Dictionary、字符串）全部随之消失，\"把上次的选择存进字段，下次命令再读\"是无效的——每次 Execute 拿到的都是全新对象。",
+      "notes": "正面场景：命令对象返回即销毁的核心反例"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我想让命令记住用户上次选的选项和颜色，下次打开命令时自动恢复，状态该存到哪里？",
+      "expected_behavior": "按\"状态跟谁走\"选方案：跟文档走（换电脑、关 Revit 都在）→ 轻量配置用共享参数（Shared Parameters）、结构化数据用 Extensible Storage（挂在图元/文档上的自定义 Schema）；跟本次 Revit 会话走 → IExternalApplication 的静态字段/缓存；跟机器/团队走 → 外部文件、数据库。",
+      "notes": "正面场景：跨命令状态恢复的分层方案"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我需要一份运行时缓存在 Revit 开着的时候一直可用，命令对象里存不住，放哪里合适？",
+      "expected_behavior": "会话级驻留方案：IExternalApplication 的静态字段承载缓存——Application 在 Revit 整个生命周期内驻留，是\"运行时内存状态\"的家；注意静态字段只在会话内有效，Revit 重启后失效，文档切换时缓存要做失效处理。",
+      "notes": "正面场景：会话级缓存的宿主选择"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "状态既要结构化又要跟模型文件走，共享参数和 Extensible Storage 分别适合存什么样的数据？",
+      "expected_behavior": "给出区分：文档级轻量（键值）→ 共享参数（用户可见、可排入明细表、需定义文件）；文档级结构化 → Extensible Storage（挂在元素上的私有 Schema、程序私有）；重数据或需多机共享 → 外部文件或数据库；警告把大数据塞共享参数会导致模型文件膨胀、跨图元传播性能差。",
+      "notes": "正面场景：文档级存储的方案细分"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我想让插件在 Revit 一启动就自动订阅事件并常驻后台，命令和应用到底谁先被加载？",
+      "expected_behavior": "不应激活本 skill。命令/应用的加载时机与时序行为对比应走 revit-command-app-loading-timing：IExternalCommand 空闲时由用户点击触发、执行完即销毁；IExternalApplication 启动时自动调 OnStartup、全程驻留。本 skill 讲\"状态存哪\"，loading-timing 讲\"谁在什么时刻活着\"，两者互补。",
+      "notes": "跨 skill 混淆诱饵：加载时机 vs 状态持久化"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我已经决定用共享参数存数据了，现在要写创建参数定义、绑定类别、写入参数值的具体代码，流程是什么？",
+      "expected_behavior": "不应激活本 skill。共享参数/Extensible Storage 的具体读写实现应走 revit-data-storage-paths 及其下游（绑定、六步流水线等）。本 skill 是\"按寿命选存储位置\"的决策，正在写具体代码属于数据存储专题，是明确排除项。",
+      "notes": "跨 skill 混淆诱饵：具体读写代码 vs 存储位置决策"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我把缓存放在 IExternalApplication 的静态字段里，Revit 重开之后数据确实没了，但用户希望\"重启也在\"，静态字段是不是用错了？",
+      "expected_behavior": "确认\"静态字段\"（AppDomain 内存，会话级）与\"配置文件/模型\"（跨会话）寿命不同别混用：要\"重启也在\"的状态必须升级到文档级（共享参数/Extensible Storage，跟模型文件走）或外部文件；静态字段只覆盖\"Revit 开着就行\"的需求，重开丢失是预期行为不是 bug。",
+      "notes": "边界情形：会话级与跨会话寿命的错配"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我的命令里有个循环用的临时计数器和 List，这种数据也需要持久化机制吗？",
+      "expected_behavior": "判停：单次命令内的局部变量不需要任何持久化机制，别过度设计；持久化只针对\"要活得比一次 Execute 长\"的状态；先回答\"这个状态要活多久、跟谁走\"再决定是否引入存储方案。",
+      "notes": "边界情形：单次命令内临时变量不持久化"
+    }
+  ]
+}

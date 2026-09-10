@@ -1,0 +1,62 @@
+{
+  "skill": "revit-failure-options-get-set",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我代码里写了 new FailureHandlingOptions()，编译直接不过，这个对象到底怎么创建？",
+      "expected_behavior": "应指出硬性 API 约束：FailureHandlingOptions 没有公开构造函数、不能 new；唯一获取方式是从事务中取出——transaction.GetFailureHandlingOptions() 拿到实例，用 Set 方法族配置后，必须 transaction.SetFailureHandlingOptions(opts) 写回同一事务才生效。",
+      "notes": "核心场景：new 编译失败的硬约束"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "怎么给某个事务挂上我自定义的 IFailuresPreprocessor，抑制它的警告弹窗？注册链是什么？",
+      "expected_behavior": "应给出三连链：先 transaction.GetFailureHandlingOptions() 取出选项对象，调 opts.SetFailuresPreprocessor(new MyPreprocessor())，再 transaction.SetFailureHandlingOptions(opts) 写回。预处理器是事务级的，经 options 对象间接挂载，不能直接 new 挂到事务上。",
+      "notes": "核心场景：挂 IFailuresPreprocessor 三连链"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我的批量处理跑完一堆事务，每个事务的小警告都要等超时，能不能把警告延迟到批次末尾统一处理？",
+      "expected_behavior": "应指出用 SetDelayedMiniWarnings(true)：从事务 Get 出 options，设置延迟小警告选项后 Set 写回；迷你警告将延迟集中出现而不是每个事务弹一次。",
+      "notes": "核心场景：SetDelayedMiniWarnings"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "事务回滚之后警告还挂在文档上，下次提交又冒出来，怎么让回滚把警告清掉？",
+      "expected_behavior": "应指出用 SetClearAfterRollback(true)：Get 出 options → 设置回滚后清警告 → Set 写回；配合回滚使用时警告随回滚清除。",
+      "notes": "核心场景：SetClearAfterRollback"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我的 IFailuresPreprocessor 里 PreprocessFailures 方法怎么写？返回值怎么控制 Revit 是继续还是终止？",
+      "expected_behavior": "不应激活本 skill。IFailuresPreprocessor 接口本身的行为语义（PreprocessFailures 如何处理失败消息、返回值含义）属于 revit-failures-preprocessor 的知识域。本 skill 只讲'怎么把预处理器挂到事务上'的 Get+Set 注册手筋。",
+      "notes": "跨 skill 混淆诱饵：failures-preprocessor（接口行为语义）"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "doc.Regenerate() 抛了 RegenerationFailedException，文档处于半完成状态，事务该怎么处理？",
+      "expected_behavior": "不应激活本 skill。重生成失败后的强制回滚属于 revit-regenerate-failure-rollback。本 skill 是事务提交前的故障处理选项配置，不处理重生成异常路径。",
+      "notes": "跨 skill 混淆诱饵：regenerate-failure-rollback"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我给第一个事务配置好了一套 options，第二个事务能不能直接复用这个对象，省得再 Get 一次？",
+      "expected_behavior": "应明确不能复用：FailureHandlingOptions 与特定事务的状态绑定（携带该事务的订阅者等信息，所有权归 Revit 内部），跨事务复用违背所有权模型、行为未定义；每个事务都要独立走一遍 Get→修改→Set 链。",
+      "notes": "边界：跨事务复用禁止"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我只想看看当前事务的故障处理配置是什么，不做修改，也要 Get 出来再 Set 写回吗？另外事务没 Start 就 Get 行不行？",
+      "expected_behavior": "应说明只读场景不必写回：Get 出来查看即可，Set 是修改后的回写动作（不 Set 修改不生效）。事务未开启时调 GetFailureHandlingOptions 无意义（对象随事务存在），配置必须建立在事务 Start 之后。",
+      "notes": "边界：只读不写回 + 事务前置条件"
+    }
+  ]
+}

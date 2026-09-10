@@ -1,0 +1,62 @@
+{
+  "skill": "revit-ribbon-panel-layout",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我的插件有 5 个命令按钮加一个'关于'，面板怎么摆才符合 Autodesk 官方指南？",
+      "expected_behavior": "给出黄金法则布局：最常用命令放大按钮放最左侧（面板折叠缩小时它的图标代表整个面板）；次高频放小按钮堆（越常用越靠下）；控件超过三列用下拉按钮收纳；'关于/管理/帮助'这类低频功能移出主面板进滑出面板。",
+      "notes": "核心差异点：按使用频率分配位置"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "面板缩成一列之后图标含义完全不对了，用户找不到最常用的功能，这是哪里设计错了？",
+      "expected_behavior": "指出失败模式：大按钮选了低频命令——面板折叠后门面含义错误；大按钮必须是整个面板最常访问的命令，它是面板的'门面命令'。",
+      "notes": "核心差异点：门面按钮语义"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "设置和帮助按钮不知道放哪，放主面板嫌乱，放哪合适？小按钮的上下顺序有讲究吗？",
+      "expected_behavior": "给出规则：管理设置、帮助、About 这类低频杂务放滑出面板（Slide-out，面板底部的隐藏区域）；主面板小按钮越常用越靠下（离建模窗口近），最少用放最上面。",
+      "notes": "核心差异点：滑出面板+纵向频率序"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "我的 Tab 应该建在 Add-Ins 还是 Analyze？另外按钮标签写多长合适？",
+      "expected_behavior": "给出归属与文案规则：图元操作类→Add-Ins Tab；分析数据类→Analyze Tab。标签 ≤3 个单词、≤36 字符，用 & 代替 and（中文标签按 36 字符折算长度）。",
+      "notes": "正面场景：Tab 归属与文字规范"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "这组命令我想用下拉按钮还是分割按钮？互斥的模式切换用什么控件表达？",
+      "expected_behavior": "不应激活本 skill。这是单个控件类型的选择，属于 revit-ribbon-control-types 的触发面（PulldownButton/SplitButton/RadioButtonGroup 选型）；本 skill 管控件选好之后在面板上怎么摆。",
+      "notes": "跨 skill 混淆诱饵：控件类型选型"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我的插件就一个按钮一个命令，需要考虑面板布局吗？",
+      "expected_behavior": "不应激活本 skill。单命令插件（一个按钮）不存在布局问题，直接用 PushButton 创建即可；布局决策面向多命令面板。",
+      "notes": "边界外场景：单命令无布局问题"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我的命令超过三列了，直接摆四列不行吗？都是挺常用的命令。",
+      "expected_behavior": "给出规则与代价：面板不超过三列，多了用下拉按钮收纳，堆满按钮会界面拥挤、小屏幕可用性差，违背官方指南；若命令多于 8 个且都是高频，建议拆成多个面板或分 Tab，避免单面板过载。",
+      "notes": "边界：三列上限与面板过载"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "指南说标签不超过 3 个单词，我做的是中文界面，这个限制怎么折算？& 代 and 的规则还适用吗？",
+      "expected_behavior": "说明局限：指南针对英文界面（≤3 words / & 替代 and），中文标签按 36 字符折算长度控制；新版 Ribbon 折叠行为与图标尺寸细节有演进，核心频率分配法则仍适用。",
+      "notes": "边界：中文本地化的折算"
+    }
+  ]
+}

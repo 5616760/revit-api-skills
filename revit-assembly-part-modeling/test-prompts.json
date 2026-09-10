@@ -1,0 +1,62 @@
+{
+  "skill": "revit-assembly-part-modeling",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我用 AssemblyInstance.Create 建好部件后，想在同一个事务里接着设置 AssemblyTypeName，结果设置失败，这是为什么？",
+      "expected_behavior": "指出构造建模必须按三阶段分事务执行：事务 1 用 AssemblyInstance.Create(doc, elementIds, categoryId) 创建部件实例（需先确认 categoryId 有效），事务 2 才能设置 AssemblyTypeName——类型名依赖部件实例已存在，这是时序硬约束不是风格偏好。",
+      "notes": "核心差异点：创建与命名分事务"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我想用 AssemblyViewUtils 给部件自动生成平面和明细视图，直接调用就报错了，是不是要先做什么检查？",
+      "expected_behavior": "给出流程：先用 AllowsAssemblyViewCreation() 检查部件是否满足创建视图的条件，再经 AssemblyViewUtils 创建所需视图；视图创建触发的文件重生成只能随独立事务提交进行，所以视图创建要放在第三个事务里。",
+      "notes": "核心差异点：先检查条件再建视图，独立事务提交"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "写分层出量工具：想把墙和楼板用 PartUtils.CreateParts 分割成零件，每层独立出量，整体流程该怎么组织？",
+      "expected_behavior": "给出三阶段流程：事务 1 调 PartUtils.CreateParts(doc, elementIds)（注意它实际创建的是 PartMaker，零件要等重生成后才可见），之后在独立事务中做属性赋值，如需视图再走 AllowsAssemblyViewCreation + AssemblyViewUtils；并说明零件/部件可独立列明细、标记、过滤。",
+      "notes": "正面场景：零件分割全流程"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "我按三个事务分别建部件、命名、建视图都成功了，但用户抱怨撤销要按三次，能不能像 UI 手工操作一样一步撤销？",
+      "expected_behavior": "给出方案：把三个事务包进 TransactionGroup，最后 Assimilate 合并——阶段内事务独立保证时序，组级合并保证撤销菜单只出现一项，与 UI 手工构造建模体验一致。",
+      "notes": "正面场景：TransactionGroup 合并撤销"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我调了 PartUtils.CreateParts 之后马上用 GetAssociatedParts 去查新零件，返回的是空集合，是不是创建失败了？",
+      "expected_behavior": "不应激活本 skill。这是 PartMaker 延迟生成的术语机制问题，属于 revit-partmaker-term 的触发面：CreateParts 只实例化 PartMaker，真正的 Part 要等事务提交触发重生成后才产生。",
+      "notes": "跨 skill 混淆诱饵：PartMaker 延迟生成"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我想把几面墙和门窗做成一个可以整体复制的编组，Revit API 里 Group 怎么创建？",
+      "expected_behavior": "不应激活本 skill。用户问的是普通图元编组（Group 体系），Group 不是部件、没有部件视图能力，与 AssemblyInstance 构造建模是两回事；应按 Group API 问题回答。",
+      "notes": "边界外场景：Group 编组而非部件"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "部件建好了，我跳过 AllowsAssemblyViewCreation 直接调 AssemblyViewUtils 创建视图，会有什么后果？另外我确实试着一个事务里做完所有步骤，为什么说不行？",
+      "expected_behavior": "说明两个失败模式：跳过 AllowsAssemblyViewCreation 对不满足条件的部件建视图会失败；一个事务内'创建+命名+建视图'会因前序结果未落库、重生成无法进行而失败。三阶段分事务是硬约束；如需单步撤销体验用 TransactionGroup 包住三个事务。",
+      "notes": "边界：B 段警告的两个失败模式"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我只想要零件和部件能分别出材料明细表，这个需求需要用构造建模这套流程吗？",
+      "expected_behavior": "区分边界：零件/部件'可独立列出明细'是构造建模的特性，但若只做明细表统计本身，走明细表 API 即可，不需要激活构造建模流程；只有创建部件/零件/部件视图时才需要三阶段分事务。",
+      "notes": "边界：明细表统计本身不属于本 skill"
+    }
+  ]
+}

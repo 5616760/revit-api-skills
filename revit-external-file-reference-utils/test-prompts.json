@@ -1,0 +1,69 @@
+{
+  "skill": "revit-external-file-reference-utils",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "写个审计功能，列出当前文档所有的外部文件引用，包括 CAD 链接和贴花。",
+      "expected_behavior": "激活后应给出 ExternalFileUtils.GetAllExternalFileReferences 的查询方案，并说明返回集合只含顶层引用不含嵌套链接。",
+      "notes": "A2 场景 1，本体"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "遍历图元的时候怎么判断哪个图元是链接载体，好做分流处理？",
+      "expected_behavior": "激活后应说明用 IsExternalFileReference/HasExternalFileReference 判断图元是否挂外部引用。",
+      "notes": "A2 场景 2"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "GetAllExternalFileReferences 的结果里找不到嵌套的子链接，是 API 有 bug 吗？",
+      "expected_behavior": "激活后应解释这是设计行为：只返回顶层引用，嵌套链接须另走 GetChildIds 链，不是数据丢失。",
+      "notes": "A2 场景 3"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "怎么区分一个文件是被人引用着但链接其实没加载？两种状态想给用户不同提示。",
+      "expected_behavior": "激活后应指出有引用不等于已加载，需另查 IsLoaded 再分支提示，避免对未加载链接取几何失败。",
+      "notes": "A2 场景 4"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "有一批没打开的 rvt 文件，要离线批量修改里面链接的路径和加载状态。",
+      "expected_behavior": "不应调用本 skill，理由：未打开文件的离线读写是 revit-transmissiondata-offline 的场景，本 skill 只查已打开文档内的引用容器。",
+      "notes": "跨 skill 混淆诱饵：在线查询 vs 离线读写"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "怎么把一个 rvt 链接加载进当前文档并设置覆盖模式？",
+      "expected_behavior": "不应调用本 skill，理由：加载/创建链接是 revit-link-decision-flow 的操作层职责，本 skill 是纯查询。",
+      "notes": "混淆诱饵：查询 vs 操作"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "搬家的时候有哪些东西容易漏掉？",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 完全无关的生活咨询。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "查到了外部引用之后，能不能顺手把这个引用的路径改掉？",
+      "expected_behavior": "不应调用本 skill 的修改用法，理由：ExternalFileUtils 是纯查询工具，改路径/加载状态要走 TransmissionData 或链接操作 API。",
+      "notes": "边界：纯查询不管修改"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我把 ExternalFileReference 对象当成图元去读参数了，报类型错误，为什么？",
+      "expected_behavior": "激活本 skill 并说明边界：ExternalFileReference 是非图元容器类，不参与图元遍历与参数读写，需换算回对应图元再操作。",
+      "notes": "边界：容器类非图元"
+    }
+  ]
+}

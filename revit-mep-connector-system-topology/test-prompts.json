@@ -1,0 +1,62 @@
+{
+  "skill": "revit-mep-connector-system-topology",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我想从一台风机出发，把整个供风系统里物理连通的图元都遍历出来检查有没有断点，应该怎么导航？",
+      "expected_behavior": "给出导航链：Element（设备）→ MEPModel → ConnectorManager → Connectors 集合 → 每个 Connector → AllRefs，从基础设备沿 AllRefs 递归下游遍历物理拓扑；组合 Connector 的 Domain/Direction/MEPSystem/AllRefs/ConnectorType 属性判定归属、状态与对端。",
+      "notes": "核心差异点：三层拓扑导航链"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我想把风机和几个末端设备组织成一个机械系统，NewMechanicalSystem 的参数要怎么准备？",
+      "expected_behavior": "给出三要素：基础设备的连接件 + 成员连接件集 + DuctSystemType，调 NewMechanicalSystem()（管道系统对应 NewPipingSystem + PipeSystemType）；三要素缺一不可，否则创建失败或系统不完整。",
+      "notes": "核心差异点：系统创建三要素"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我用 Connector.AllRefs 去查一个设备上所有'连接'，发现有些逻辑上连的东西查不到，是什么原因？",
+      "expected_behavior": "解释物理 vs 逻辑：物理连接件可见（真实接口），逻辑连接件不可见；AllRefs 只返回物理连接件，逻辑连接件对应用层不可见——这不是 bug 而是机制如此。",
+      "notes": "核心差异点：AllRefs 只含物理连接件"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "怎么判断某个连接件接在什么上、属于哪个系统、有没有连上？用哪几个属性组合？",
+      "expected_behavior": "给出三属性组合：Connector.MEPSystem（系统归属）、IsConnected（是否已连接）、AllRefs（引用的连接对象）——分别覆盖'归属/状态/对端'三个查询维度。",
+      "notes": "正面场景：连接件三维度查询"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我想在两个既有连接件之间接一段新风管，用 NewDuct 的哪个入口？",
+      "expected_behavior": "不应激活本 skill。创建管道/风管属于 revit-mep-curve-creation-entries 的触发面（两连接件入口 NewDuct(conn1, conn2, ductType)）；本 skill 把连接件当拓扑对象做遍历与归属，不涉及创建。",
+      "notes": "跨 skill 混淆诱饵：MEP 创建入口"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我要把一根梁和一根柱的分析模型端点连起来，用 Connector 还是 AnalyticalLink？",
+      "expected_behavior": "不应激活本 skill。结构分析连接是 AnalyticalLink/Hub 体系，与 MEP Connector 无关，属于 revit-analytical-link-hub 的触发面；本 skill 是 MEP 连接件/系统/设备拓扑，两者是完全不同的连接域。",
+      "notes": "跨 skill 混淆诱饵：分析连接域"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我想知道某个 MEPSystem 里都有哪些成员图元，直接遍历系统里所有连接件的 AllRefs 来收集可以吗？",
+      "expected_behavior": "指出通道混用的错误：连接件遍历得到的是物理拓扑，系统成员的逻辑归属要靠 Connector.MEPSystem 引用判断——两条通道不能混用，否则得出错误结论。",
+      "notes": "边界：物理遍历 vs 逻辑归属两通道"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我写了个通用工具对所有选中图元做连接件遍历，选到普通墙的时候就挂了，哪里没判？",
+      "expected_behavior": "指出判停条件：先判图元有无 MEPModel（非 MEP 设备），无则本链不适用，报告后结束；导航链入口是 MEPModel.ConnectorManager.Connectors。",
+      "notes": "边界：非 MEP 图元的判停"
+    }
+  ]
+}

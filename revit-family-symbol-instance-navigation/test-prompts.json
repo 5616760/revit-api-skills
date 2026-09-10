@@ -1,0 +1,62 @@
+{
+  "skill": "revit-family-symbol-instance-navigation",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "加载了一个桌子的 rfa，写代码创建实例前怎么遍历出它所有的类型符号？",
+      "expected_behavior": "激活后应给出正向通道：从 document.FamilySymbols（或 family.Symbols）按名字筛出目标 FamilySymbol，再用 NewFamilyInstance 创建。",
+      "notes": "正面场景：正向创建通道"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "怎么把项目里那批门批量换成同族的另一个尺寸型号，不想删除重建",
+      "expected_behavior": "激活后应指导互换通道：直接给 FamilyInstance.Symbol 赋新符号即可换类型，几何跟随更新。",
+      "notes": "正面场景：符号互换"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "拿到一个族实例想打开它的族文档改东西，从实例往上是哪几个属性链上去的？",
+      "expected_behavior": "激活后应给出反向通道：instance.Symbol → symbol.Family → 必要时 family.OwnerFamily/EditFamily 进入族文档。",
+      "notes": "正面场景：反向溯源通道"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "遍历全项目族实例按族和类型分组统计，体量族的名称取出来是空的会不会崩？",
+      "expected_behavior": "激活后应提示例外规则：体量/内建构件在 UI 中'族/类型'字段为空，按三元关系强取会 NullReference，遍历需特判。",
+      "notes": "正面场景：空族名特判"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "族、族符号、族实例这三个概念到底怎么区分？给我打个比方讲讲",
+      "expected_behavior": "不应调用本 skill，理由：这是纯概念理解需求，属于 revit-family-three-layer-model 的触发面，本 skill 负责代码中的导航操作而非概念讲解。",
+      "notes": "跨 skill 混淆诱饵：概念模型 vs 代码导航"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "帮我写一个 Chrome 浏览器插件拦截广告",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit 族导航 API 无关的浏览器开发请求。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "项目里的墙实例，我想用 instance.Symbol 拿它的类型怎么拿不到？",
+      "expected_behavior": "不应调用本 skill，理由：墙是系统族，不经 Family/FamilySymbol 三元体系，类型走 WallType 等专用类——三元导航仅对构件族成立，应转介 revit-system-vs-component-family。",
+      "notes": "边界：系统族不适用三元导航"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "注释类的图元也要换类型，是不是也用 AnnotationSymbolType 那套？和族实例互换是一回事吗？",
+      "expected_behavior": "激活后应说明注释图元走平行的 AnnotationSymbolType/AnnotationSymbol 封装，不是 FamilyInstance.Symbol 互换——属本 skill 的例外规则边界知识。",
+      "notes": "边界：注释图元平行体系"
+    }
+  ]
+}

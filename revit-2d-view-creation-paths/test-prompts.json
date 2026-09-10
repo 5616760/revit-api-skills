@@ -1,0 +1,62 @@
+{
+  "skill": "revit-2d-view-creation-paths",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "API 能不能直接创建立面视图？我试了半天没找到像建剖面那样的方法",
+      "expected_behavior": "激活后应解释立面的结构性差异：必须先 doc.Create.NewElevationMarker 创建立面符号，再 marker.CreateElevation 两步生成，不能像剖面那样直接创建。",
+      "notes": "正面场景：立面两步走的核心差异"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "想批量给项目加剖面视图，ViewSection.CreateSection 的参数怎么填？",
+      "expected_behavior": "激活后应给出 ViewSection.CreateSection(doc, viewFamilyTypeId, sectionBox) 的调用要素：ViewFamilyTypeId + BoundingBoxXYZ 类型的 sectionBox。",
+      "notes": "正面场景：剖面批量创建"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "怎么用代码自动排版图纸、把视图放上图纸然后打印？",
+      "expected_behavior": "激活后应给出 ViewSheet.Create(titleBlockId) → Viewport.Create 放视图 → viewSheet.Print() 的三段链路。",
+      "notes": "正面场景：图纸-视口-打印链路"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "CanAddViewToSheet 返回 false，同一个视图不能放到第二张图纸上吗？",
+      "expected_behavior": "激活后应确认同一视图不能上多张图纸，建议用 CanAddViewToSheet 前置校验并给替代方案。",
+      "notes": "正面场景：图纸放置校验失败"
+    },
+    {
+      "id": "should-trigger-05",
+      "type": "should_trigger",
+      "prompt": "我想按标高批量建楼层平面和天花板平面，用 ViewPlan.Create 要准备什么参数？",
+      "expected_behavior": "激活后应说明 ViewPlan.Create(doc, viewFamilyTypeId, levelId) 的先决条件，以及面积平面用 CreateAreaPlan 的差异。",
+      "notes": "正面场景：平面视图创建入口"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "帮我用 API 生成一个透视效果图视角的三维视图",
+      "expected_behavior": "不应调用本 skill，理由：透视图属三维视图创建，走 View3D.CreatePerspective，是 revit-3d-view-creation-flow 的触发面，本 skill 只覆盖平面/剖面/立面/图纸等二维视图。",
+      "notes": "跨 skill 混淆诱饵：3D 视图创建 vs 2D 视图创建"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "Windows 环境变量 PATH 怎么配置？",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit 视图 API 无关的操作系统配置请求。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我用 NewLevel 建了一批标高，怎么一个平面视图都没有？是不是建错了？",
+      "expected_behavior": "激活本 skill 与 revit-level-no-auto-view 边界重叠：核心答案是 API 建标高不会自动建关联平面视图（UI 与 API 行为差异），需显式调 ViewPlan.Create 补建——应至少引用该认知，若仅问'怎么建平面视图'则本 skill 承担创建入口。",
+      "notes": "边界：标高无视图陷阱 vs 平面创建入口"
+    }
+  ]
+}

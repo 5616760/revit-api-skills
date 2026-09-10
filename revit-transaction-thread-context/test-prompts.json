@@ -1,0 +1,55 @@
+{
+  "skill": "revit-transaction-thread-context",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我在模态对话框 ShowDialog 期间直接 new Transaction 修改参数都很顺利，换成非模态窗体（Show）的按钮回调就抛 InvalidOperationException，模态和非模态差在哪？",
+      "expected_behavior": "应解释二者执行上下文差异：模态对话框运行时中断了 Revit 的主消息循环，对话框代码仍在 Revit API 调用上下文内，可以直接开事务调用 API；非模态窗体的按钮回调发生在 Revit 消息循环之外，脱离 API 上下文，Revit 拒绝在没有 API 上下文的情况下开事务。",
+      "notes": "核心场景：模态/非模态上下文差异原理"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我的非模态窗体要安全地修改 Revit 模型，正确的机制是什么？",
+      "expected_behavior": "应指出非模态窗口回调不在 API 上下文，不能用直接调用+事务的方式；正确机制是 External Events 框架：实现 IExternalEventHandler（Execute 内开事务），按钮回调只调 ExternalEvent.Raise()。与 revit-external-events-nonmodal-dialog 的四步实现形成衔接。",
+      "notes": "核心场景：非模态安全修改途径"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "怎么判断我当前这段代码是不是在 Revit API 上下文里执行？我想封装一个统一的检查。",
+      "expected_behavior": "应给出判断依据：代码是否位于 Revit 的调用链中——IExternalCommand.Execute、事件处理器回调、Idling 回调、模态对话框运行期间都属于 API 上下文；非模态窗体控件回调、Task.Run/Thread/Timer 回调、async 续延则不属于。API 上下文内可开事务，上下文外必须走 ExternalEvent。",
+      "notes": "核心场景：API 上下文判别"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我要给非模态窗体做一套完整的修改模型方案：ExternalEvent.Create 的时机、按钮怎么只调 Raise、窗体关闭时怎么 Dispose，能给出完整四步模板吗？",
+      "expected_behavior": "不应激活本 skill。完整的非模态对话框 External Events 四步实现模板属于 revit-external-events-nonmodal-dialog。本 skill 讲模态/非模态上下文差异的原理与判别，是那个 skill 的前置理解。",
+      "notes": "跨 skill 混淆诱饵：external-events-nonmodal-dialog"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我用 Task.Run 在后台线程批量改参数，抛了事务相关的异常，帮我看看哪里出问题。",
+      "expected_behavior": "不应激活本 skill。Task.Run/后台线程开事务的故障诊断属于 revit-transaction-off-thread（与模态/非模态对话框上下文是两类场景）。本 skill 聚焦对话框模态性差异。",
+      "notes": "跨 skill 混淆诱饵：transaction-off-thread"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "模态对话框里开的事务一直保持打开状态，用户点了窗体上的取消按钮，这个挂着的事务怎么处理？",
+      "expected_behavior": "应指出模态对话框期间保持事务打开是允许的，但必须在对话框关闭前显式收尾：确认路径 Commit、取消路径 RollBack，不能让事务逃逸到对话框生命周期之外。这与非模态'根本不能开'形成对照。",
+      "notes": "边界：模态事务的生命周期收尾"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我用 Windows 消息钩子（Hook）和 WinForms Timer 的回调调用 Revit API，虽然跑在主线程上，为什么还是不行？",
+      "expected_behavior": "应说明判断依据不是线程 ID 而是调用栈来源：消息钩子/Timer 回调虽在主线程，但不经过 Revit API 调用链，Revit 无法保证内部状态一致，事务调用被拒绝；这类回调按'无 API 上下文'处理，改用 ExternalEvent。",
+      "notes": "边界：主线程但不等于 API 上下文"
+    }
+  ]
+}

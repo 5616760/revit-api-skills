@@ -1,0 +1,55 @@
+{
+  "skill": "revit-settings-api-mapping",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我想让插件批量读取并修改项目里所有材料的定义，不想让用户手动打开\"材料\"对话框，API 入口在哪？",
+      "expected_behavior": "查 Settings 映射表：材料 → Document.Settings.Materials，即可获取全部材料定义的句柄并程序化修改；修改操作须在 Transaction 内执行，改后重新读取验证。",
+      "notes": "正面场景：材料定义的程序化访问"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "插件输出报告前需要知道项目当前用的长度、面积单位，\"管理/设置\"里的项目单位用哪个 API 读？",
+      "expected_behavior": "给出映射：项目单位 → Document.GetUnits() 返回 Units 对象，用于格式化输出或单位转换，插件据此正确格式化数值匹配项目单位。",
+      "notes": "正面场景：项目单位 GetUnits 映射"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "Revit UI \"设置\"对话框下的那些项目级配置——项目信息、阶段、类别、对象样式——分别对应 Document 的哪个属性？有没有一张对照表？",
+      "expected_behavior": "给出完整映射表：项目信息 → Document.ProjectInformation；参数绑定 → Document.ParameterBindings；项目位置 → Document.ProjectLocations/ActiveProjectLocation；材料 → Document.Settings.Materials；对象样式/类别 → Document.Settings.Categories；阶段 → Document.Phases；单位 → Document.GetUnits()；强调这些是 UI\"设置\"对话框的 API 镜像。",
+      "notes": "正面场景：Settings 映射表整体查询"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我想读某一面墙上的\"防火等级\"参数值，该用 Document.Settings 还是别的什么？",
+      "expected_behavior": "不应激活本 skill。图元级参数读写用 Element.get_Parameter / LookupParameter，不走 Settings；Document.Settings 是项目级全局配置，Element.Parameters 是图元实例数据，两者层级不同。该问题应走 revit-parameter-index-lookup 或 revit-builtin-parameter-semantics 的参数检索与读写路径。",
+      "notes": "跨 skill 混淆诱饵：图元级参数 vs 项目级设置"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "API 访问共享参数文件的时候报文件无效，SharedParametersFilename 要怎么初始化？",
+      "expected_behavior": "不应激活本 skill。该问题是共享参数文件路径初始化问题，应走 revit-shared-parameter-file-init：先设置 app.SharedParametersFilename 指向有效文件再调用 OpenSharedParameterFile。本 skill 关注 Settings 各集合的映射关系，不含共享参数文件路径管理。",
+      "notes": "跨 skill 混淆诱饵：共享参数文件初始化"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我在 Document.ParameterBindings 里找项目参数和内建参数的绑定，怎么都查不到，ParameterBindings 到底管什么？",
+      "expected_behavior": "指出书中警告的边界：ParameterBindings 只对共享参数的类别绑定有效——项目参数和内置参数不走此路径；查不到不代表 API 用错，而是绑定类型不在覆盖范围。",
+      "notes": "边界情形：ParameterBindings 只覆盖共享参数"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我想改当前视图的视图范围和可见性图形替换，Settings 里没找到对应的属性，是不是在别的对象上？",
+      "expected_behavior": "确认视图级设置不在 Settings 映射内：视图范围、可见性图形替换等走 View 对象属性；本 skill 的映射表只覆盖项目级配置（材料/单位/阶段/类别/项目信息/参数绑定/项目位置），视图级设置是明确排除项。",
+      "notes": "边界情形：视图级设置不在映射表内"
+    }
+  ]
+}

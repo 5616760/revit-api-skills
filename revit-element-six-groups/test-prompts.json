@@ -1,0 +1,62 @@
+{
+  "skill": "revit-element-six-groups",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我想在图纸上加一个门的标记，用 NewFamilyInstance 创建老是报错，是不是 API 选错了？",
+      "expected_behavior": "激活后把目标定组到 Annotation（注释），指出注释图元只能存在于视图中、要走视图专有 API（如 NewTag/NewDetailCurve），不能像模型图元那样用 NewFamilyInstance 直接放。",
+      "notes": "A2 场景3：注释图元报错怀疑 API 用错组。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "要写个过滤条件把图纸上的尺寸标注、标记、文字说明这些'非模型'的东西都捞出来，这些算一类吗？怎么归类？",
+      "expected_behavior": "激活后定位到 Annotation 组，列出其成员（Dimension、IndependentTag、TextNote、AnnotationSymbol 等），按这一组组织过滤条件。",
+      "notes": "A2 场景2：按功能粗分类组织过滤条件。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "Revit 的图元到底分几种？我想动手前先搞清楚我要操作的东西属于哪一类，免得 API 用错。",
+      "expected_behavior": "激活后给出 Model/Sketch/View/Group/Annotation/Information 六组框架及各组 API 形态差异（Model 内再分实例/主体/结构），教用户先定组再选 API。",
+      "notes": "A2 语言信号：'图元分几类'的概念性问题 + 预判用途。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我有一个门的 FamilyInstance，想顺着它找到对应的族类型和族，这个层级关系怎么走？",
+      "expected_behavior": "不应调用本 skill，理由：讨论的是类型-实例四层模型（Instance.Symbol→Family→Category）的导航，不是功能六组的行为约束，应触发 revit-category-family-symbol-instance。",
+      "notes": "跨 skill 混淆诱饵：D 组邻居 revit-category-family-symbol-instance——两套分类正交，A2 段明确区分。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我要在大模型上组织一套高效的过滤链，先按类别缩圈再精筛，这个策略怎么设计？",
+      "expected_behavior": "不应调用本 skill，理由：本 skill 只管'目标是什么'，不管'怎么高效找'，应触发 revit-filter-quick-slow-logical。",
+      "notes": "跨 skill 混淆诱饵：C 组过滤策略 skill 的触发面——B 段明确排除具体过滤器的性能设计。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "帮我把这段会议录音转成文字稿，并整理出待办事项清单。",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 完全无关的请求。",
+      "notes": "完全无关的通用请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "过滤的时侯我是该用六组这套分类，还是直接用 Category 那个枚举（比如 OST_Walls）？两套东西什么关系？",
+      "expected_behavior": "应激活本 skill 并厘清边界：六组是概念分组用于预判 API 行为，Category 是 API 里的显式枚举/对象用于过滤——过滤时用 Category，预判行为时用六组，两者不能互替。",
+      "notes": "边界场景：B 段'容易混淆的邻近方法论'——六组 vs Category。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "处理墙和处理门窗族实例，我一直是同一套逻辑跑的，好像也没什么问题？有必要分开吗？",
+      "expected_behavior": "应激活本 skill 并按 Model 组内部细分解释：主体图元（墙/楼板）有承载语义、族实例是放置产物，编辑路径应各归其位；统一处理在简单场景能跑，但遇到承载关系（如删墙影响洞口）会暴露差异。",
+      "notes": "边界场景：模型组内部三层细分的必要性，用户感觉'没问题'的隐性风险。"
+    }
+  ]
+}

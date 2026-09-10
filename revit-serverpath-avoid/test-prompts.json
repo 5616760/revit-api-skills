@@ -1,0 +1,62 @@
+{
+  "skill": "revit-serverpath-avoid",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "插件要打开 Revit Server 上的中心文件，代码里 ModelPath 怎么构造才靠谱？",
+      "expected_behavior": "激活后应指出不要硬编码 ServerPath(服务器名, 路径)，正确做法是 ModelPathUtils.GetRevitServerPrefix() 取当前注册前缀再拼接转换。",
+      "notes": "A2 场景 1，本体"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "Revit Server 那台服务器改了个名字，之后插件就找不到中心文件了，怎么修？",
+      "expected_behavior": "激活后应诊断 ServerPath 硬编码服务器名导致改名后引用失效，并给出运行时获取前缀的修复方案。",
+      "notes": "A2 场景 2，典型故障"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "代码评审发现同事写了 new ServerPath 直接传服务器名字符串，这有什么隐患？",
+      "expected_behavior": "激活后应说明服务器名可被用户在 Revit UI 中更改，硬编码后改名即失效，应改用 GetRevitServerPrefix + ConvertUserVisiblePathToModelPath。",
+      "notes": "A2 场景 3"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "要以编程方式打开中心文件并只加载部分工作集，该怎么配置？",
+      "expected_behavior": "不应调用本 skill，理由：打开与工作集加载是 revit-open-workshared-file 的职责，本 skill 只管 ModelPath 的构造方式。",
+      "notes": "跨 skill 混淆诱饵：路径构造 vs 打开配置"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "同步中心的时候模型被锁，程序一直挂起等待，要怎么自定义？",
+      "expected_behavior": "不应调用本 skill，理由：同步过程中的锁定等待与回调是 revit-synchronize-with-central 的领域。",
+      "notes": "混淆诱饵：同步上下文里的相邻问题"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "家里路由器经常断线，怎么设置才稳定？",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 完全无关的网络设备咨询。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我要打开的中心文件就是本地磁盘或局域网 UNC 路径，也这么绕一圈取前缀吗？",
+      "expected_behavior": "不应调用本 skill，理由：本地文件或 UNC 网络路径直接用 FilePath 构造，与 Revit Server 无关。",
+      "notes": "边界：非 Server 路径不适用"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "就写个一次性小脚本，服务器名这个月肯定不会变，直接写死行吗？",
+      "expected_behavior": "激活本 skill 但可接受边界：一次性脚本且服务器名短期确定不变时风险可接受，仍建议留配置项；长期插件必须运行时获取。",
+      "notes": "边界：一次性脚本的权衡"
+    }
+  ]
+}

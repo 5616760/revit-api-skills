@@ -1,0 +1,55 @@
+{
+  "skill": "revit-referencepoint-curvebypoints",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "在体量环境里要沿一条曲线在 25% 的位置精确放一个点，手算坐标行不行？",
+      "expected_behavior": "激活后应指导用 PointOnEdge 配合 PointLocationOnCurve 指定参数位置，不要手工算坐标——手工算会丢失与曲线的关联。",
+      "notes": "正面场景：曲线定比分点"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "想让形状能参数化调整，拖动驱动点之后曲线和形状都跟着更新，概念设计里怎么实现？",
+      "expected_behavior": "激活后应说明参照点是参数化驱动源：ReferencePoint 加入 ReferencePointArray → NewCurveByPoints 建点曲线 → 形状基于点链创建，移动点即驱动更新。",
+      "notes": "正面场景：点驱动参数化"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "点怎么吸附到已有的边和面上？PointOnEdge 和 PointOnFace 分别什么场景用？",
+      "expected_behavior": "激活后应列出 PointElementReference 五个子类（PointOnEdge/PointOnFace/PointOnPlane/边边交点/边面交点）的吸附语义。",
+      "notes": "正面场景：点吸附几何"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "做幕墙嵌板要在曲线骨架上定点，自适应构件要对齐宿主点，用什么图元做驱动单元？",
+      "expected_behavior": "激活后应说明参照点是概念设计的通用驱动单元：嵌板骨架用 PointOnEdge 沿曲线定点，自适应构件用点对齐宿主放置。",
+      "notes": "正面场景：嵌板/自适应构件骨架"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "创建形状后发现原来的轮廓曲线不见了，怎么让它保留下来？",
+      "expected_behavior": "不应调用本 skill，理由：轮廓线被形状'消耗'是模型线/参照线的行为差异，属于 revit-model-vs-reference-line 的触发面（ChangeToReferenceLine 转换），本 skill 以点驱动，不涉线类型消耗问题。",
+      "notes": "跨 skill 混淆诱饵：线驱动 vs 点驱动"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "帮我把这个 PDF 拆成单页",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 无关的文档处理请求。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "在普通项目文档里想放几个参照点辅助定位，可以吗？",
+      "expected_behavior": "不应调用本 skill，理由：参照点仅存在于概念设计环境（体量族），项目文档创建普通图元走 document.Create——用户语境错位，需先澄清环境或转介体量族语境。",
+      "notes": "边界：环境错位（项目文档 vs 概念设计环境）"
+    }
+  ]
+}

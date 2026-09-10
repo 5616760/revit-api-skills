@@ -1,0 +1,62 @@
+{
+  "skill": "revit-stairs-object-model",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "写个楼梯检查工具，要把每部楼梯的梯段数、平台厚度、下面的支撑构件都列出来，从哪个类入手？",
+      "expected_behavior": "先判定楼梯模式（IsByComponent），对按构件楼梯走三条通道：GetStairsRuns 类集合遍历梯段、StairsLanding 读平台属性、GetStairsSupports 取支撑清单（返回普通 Element，类型信息查参数）。",
+      "notes": "正面场景：楼梯明细/检查工具（A2 场景 1）。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "GetStairsSupports 返回的好像就是普通 Element，没有 StairsSupport 这种专用类，那支撑的类型名从哪拿？",
+      "expected_behavior": "确认 API 未发布支撑专用类这一事实，指导转向查支撑 Element 的参数获取类型等信息，功能不受阻。",
+      "notes": "正面场景：支撑无专用类的处理（A2 场景 4）。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "梯段在平面上的投影走向和底部轮廓是同一个东西吗？GetStairsPath 和 GetFootprintBoundary 分别返回什么？",
+      "expected_behavior": "区分两个语义不同的 API：GetStairsPath 返回投影到基面的路径曲线，GetFootprintBoundary 返回底部轮廓曲线；端部收头可配合 BeginsWithRiser/EndsWithRiser 判断。",
+      "notes": "正面场景：路径 vs 轮廓语义区分（A2 场景 2）。"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "楼梯是按构件建的还是按草图建的，API 里怎么判断？两种楼梯读法差别大吗？",
+      "expected_behavior": "用 Stairs.IsByComponent(doc, id) 判定模式；按草图楼梯不适用三通道访问，应改走草图相关路径并告知用户。",
+      "notes": "正面场景：先判定模式再选通道。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我在 StairsEditScope 会话里建完梯段后顺手调 Railing.Create 想加栏杆，结果失败了，为什么？",
+      "expected_behavior": "不应调用本 skill，理由：这是创建侧的编辑作用域隔离问题（会话内禁建栏杆），属于 revit-stairs-edit-scope-isolation；本 skill 只管已存在楼梯的只读对象模型。",
+      "notes": "跨 skill 混淆诱饵：只读对象模型 vs 编辑会话隔离（一读一写）。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "帮我给 Revit 的功能区加一个自定义按钮，点击后弹出公司介绍。",
+      "expected_behavior": "不应调用本 skill，理由：UI 定制与楼梯对象模型无关。",
+      "notes": "完全无关的通用请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "程序里能读楼梯自带的栏杆扶手信息吗？还是说栏杆完全是另一个话题？",
+      "expected_behavior": "边界在读写分界：只读关联访问走 GetAssociatedRailings()，属于本 skill 范围；一旦涉及创建/替换栏杆，则转入 revit-stairs-edit-scope-isolation 的普通事务流程。agent 应先明确用户意图落在哪一侧。",
+      "notes": "边界场景：栏杆只读访问 vs 栏杆创建的作用域。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我想读楼梯类型上的剪切标记信息，这算只读访问还是要开编辑会话？",
+      "expected_behavior": "属只读访问范围：经 GetTypeId() 取 StairsType 后通过 STAIRSTYPE_CUTMARK_TYPE 内建参数读 CutMarkType，无需编辑会话；只有修改构件才涉及 StairsEditScope。",
+      "notes": "边界场景：类型信息只读读取的归属。"
+    }
+  ]
+}

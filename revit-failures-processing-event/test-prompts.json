@@ -1,0 +1,62 @@
+{
+  "skill": "revit-failures-processing-event",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "插件要做全自动、无弹窗的故障处理，按公司标准自动解决某些错误，FailuresProcessing 事件怎么订阅？",
+      "expected_behavior": "激活后应说明订阅 FailuresProcessing 事件的时机（预处理器之后触发、可有任意数量处理程序），以及事件内处理故障的方式。",
+      "notes": "A2 场景 1/2"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "事件处理器写完了但好像没生效，处理结果是不是不能直接 return？SetProcessingResult 是干嘛的？",
+      "expected_behavior": "激活后应指出事件无返回值，必须用 args.SetProcessingResult() 传回状态，忘了设置等于没处理，引擎按未处理继续。",
+      "notes": "A2 场景 3，核心陷阱"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "警告处理完之后又反复出现，事务像是死循环卡住了，问题出在哪？",
+      "expected_behavior": "激活后应诊断 ProceedWithCommit 无真实解决方案导致引擎反复触发处理的无限循环问题。",
+      "notes": "A2 场景 4"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我只想在跑某一个特定事务的时候压掉它的警告，别的照常。",
+      "expected_behavior": "不应调用本 skill，理由：只影响单事务的压噪用事务级预处理器（revit-failures-preprocessor）更精准。",
+      "notes": "跨 skill 混淆诱饵：事件级 vs 事务级"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "注册了全局故障处理器之后标准错误对话框是不是就不出现了？Dismiss 该怎么调？",
+      "expected_behavior": "不应调用本 skill，理由：接管标准 UI 与 Dismiss/WaitForUserInput 是全局 IFailuresProcessor（revit-failures-processor-global）的行为。",
+      "notes": "混淆诱饵：事件 vs 全局处理器"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "这段视频怎么下载到本地保存？",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit 故障处理无关的视频下载请求。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我挂了两个事件处理程序，一个想提交一个想回滚，它们按什么顺序执行？结果会怎样？",
+      "expected_behavior": "激活本 skill 但需说明边界：书中未讨论多个事件处理程序的执行顺序与冲突，结果不可预测，工程上要谨慎叠加、避免互相矛盾的处理程序。",
+      "notes": "边界：多处理程序冲突是书中盲点"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "在 DocumentChanged 事件里检测到图元变化，能不能顺手在那里处理故障？",
+      "expected_behavior": "不应调用本 skill，理由：DocumentChanged 是只读通知事件，不可影响提交/回滚裁决；故障引擎的回调是 FailuresProcessing 事件，两者机制不同。",
+      "notes": "边界：文档事件 vs 故障事件"
+    }
+  ]
+}

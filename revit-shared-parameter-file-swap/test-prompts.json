@@ -1,0 +1,55 @@
+{
+  "skill": "revit-shared-parameter-file-swap",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我的插件有自己的共享参数文件，但用户项目里配置了他们自己的参数文件，我怎么在不动用户配置的前提下用我的文件？",
+      "expected_behavior": "给出三步切换法：第一步记录用户当前 app.SharedParametersFilename 原值；第二步将其改为插件参数文件路径并 OpenSharedParameterFile 完成操作；第三步操作结束后把原路径设回去，恢复用户配置。",
+      "notes": "正面场景：三步切换法完整流程"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "用户投诉说装了我的插件之后，他们的共享参数文件配置被改掉了，Revit 里的共享参数全丢了。我的代码哪里做错了？",
+      "expected_behavior": "诊断病因：直接修改 SharedParametersFilename 且未恢复，导致用户配置永久指向插件文件；修复方案是三步切换法（记录原路径→切换→操作完恢复），并用 try/finally 确保异常路径也执行恢复。",
+      "notes": "正面场景：未恢复导致用户配置丢失"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我在命令里切换共享参数文件做绑定，中途抛了异常，用户的项目文件配置就停在插件文件上了。怎么写才安全？",
+      "expected_behavior": "强调恢复动作必须可靠执行：将切换与恢复包在 try/finally 中，finally 里把记录的原 SharedParametersFilename 写回；说明这是三步切换法的关键保障，防止异常路径下配置泄漏。",
+      "notes": "正面场景：异常安全的恢复"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我第一次调 OpenSharedParameterFile 就报共享参数文件无效，是不是要先设置什么属性？",
+      "expected_behavior": "不应激活本 skill。该问题是文件初始化顺序，应走 revit-shared-parameter-file-init：先设 SharedParametersFilename 再 OpenSharedParameterFile。本 skill 处理的是已有文件配置的切换与恢复。",
+      "notes": "跨 skill 混淆诱饵：初始化顺序 vs 切换恢复"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "切换到我的参数文件之后，BindingMap.Insert 还是返回 false 没绑上，该怎么排查？",
+      "expected_behavior": "不应激活本 skill。该问题是绑定静默失败，应走 revit-binding-insert-silent-fail：Contains 预检加返回值检查。本 skill 只保证文件切换正确。",
+      "notes": "相邻主题诱饵：绑定失败"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "三步切换法里，如果用户本来就没配置任何共享参数文件（原路径是空的），恢复的时候要设回什么？",
+      "expected_behavior": "说明空路径情形：记录原值时可能是空字符串或无效路径，恢复时仍原样写回（包括空值），保持用户环境原貌；插件逻辑不应假设原路径一定有效。",
+      "notes": "边界情形：原路径为空的恢复"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我在切换文件期间拿到的 DefinitionFile 对象，恢复用户文件之后还能继续用吗？",
+      "expected_behavior": "说明风险：恢复路径后应用持有的共享参数文件已换回用户的文件，插件文件期间获得的 DefinitionFile/Definition 引用不应再依赖使用；应在本插件的文件持有窗口内完成全部取定义与绑定操作。",
+      "notes": "边界情形：切换窗口内的引用有效期"
+    }
+  ]
+}

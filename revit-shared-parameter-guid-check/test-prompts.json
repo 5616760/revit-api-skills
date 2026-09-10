@@ -1,0 +1,55 @@
+{
+  "skill": "revit-shared-parameter-guid-check",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "项目里有同名参数，我分不清哪个是我们公司定义的共享参数。怎么用 GUID 确认参数定义的身份？",
+      "expected_behavior": "给出 GUID 校验方法：共享参数的定义级 GUID 全局唯一且不随名称/语言变化，用 element.getParameter(GUID) 或对照 SharedParameterElement 的 GUID 值与插件定义文件中的 GUID 匹配，即可确认参数身份、消除同名歧义。",
+      "notes": "正面场景：同名参数身份确认"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "共享参数的 GUID 和图元的 UniqueId 长得都很像 UUID，它们是一回事吗？分别标识什么？",
+      "expected_behavior": "区分两级唯一标识：共享参数 GUID 是定义级唯一（同一参数定义在全项目乃至跨项目一致，标识\"参数种类\"）；Element.UniqueId 是实例级唯一（标识\"某一个图元\"）；两者组合可唯一定位某图元上的某参数实例。",
+      "notes": "正面场景：两级 GUID 语义区分"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我们团队两台机器各自建了一遍\"防火等级\"共享参数，现在 GUID 不一样，项目里绑了不同的定义，怎么排查和统一？",
+      "expected_behavior": "说明 GUID 定义级唯一性含义：独立创建的同名参数是不同定义（GUID 不同），等同两个参数；排查用 GUID 匹配识别出重复定义，统一方案是团队共用同一份参数文件（同一 GUID 来源），避免各自生成。",
+      "notes": "正面场景：重复定义排查"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我要在多个图元间持久保存一个 ID 用于外部数据库关联，应该用 ElementId 还是 UniqueId？为什么重开项目后 ElementId 变了？",
+      "expected_behavior": "不应激活本 skill。该问题是图元标识选型，应走 revit-elementid-vs-uniqueid（或附录版 revit-id-vs-uid-decision）：ElementId 会话级不稳定、UniqueId 持久唯一适合外键。本 skill 关注共享参数定义级 GUID 与参数身份校验。",
+      "notes": "跨 skill 混淆诱饵：图元双 ID 决策 vs 参数 GUID"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "用 getParameter(GUID) 检索共享参数和用字符串查，哪种方式在多语言项目里更稳？",
+      "expected_behavior": "不应激活本 skill。该问题是检索路径选型，应走 revit-parameter-index-lookup：按参数来源在名称/枚举/GUID/Definition 四种路径选择。本 skill 侧重 GUID 的语义与校验价值。",
+      "notes": "相邻主题诱饵：检索路径选型"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我把共享参数删了重建，新参数名称一样，老项目图元上的旧参数值还在但 GUID 换了，这种历史数据怎么办？",
+      "expected_behavior": "说明 GUID 是定义身份的本质：重建即新定义（新 GUID），旧值挂在旧定义上属于孤儿数据；建议删除前导出旧值，或团队始终维护单一参数文件保证 GUID 复用，避免重建定义造成数据断裂。",
+      "notes": "边界情形：定义重建导致 GUID 更换"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "族参数（非共享参数）在族编辑器里也能看到 GUID 吗？没有 GUID 的话怎么稳定标识？",
+      "expected_behavior": "说明族参数不是共享参数、无定义级 GUID，不能走 GUID 校验路径；其稳定标识只能依赖定义名称或 Definition 对象引用；要把族参数升级为可跨项目稳定追踪的参数，应改用共享参数。",
+      "notes": "边界情形：非共享参数无 GUID"
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "skill": "revit-wall-create-overloads",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "Wall.Create 好几个静态重载，写代码的时候不知道该挑哪一个。",
+      "expected_behavior": "清点手上参数形态（Curve 或 IList<Curve>、Level 或 ElementId、类型来源、是否要法向 XYZ），按轮廓形状乘参数形态组合对照重载表选出唯一签名。",
+      "notes": "正面场景：重载选择决策。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "手里只有标高的 ElementId，没有 Level 对象，建墙前还要先 GetElement 换一下吗？",
+      "expected_behavior": "直接选带 ElementId 参数的 Create(Document, Curve, ElementId, bool) 重载，不必先 GetElement 换对象；决策输入是持有的参数类型。",
+      "notes": "正面场景：参数形态决定重载。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "要创建异形轮廓的墙，还要指定它的法向朝向，用哪个签名？",
+      "expected_behavior": "非矩形轮廓走 IList<Curve> 入口，带法向需求选 Create(Document, IList<Curve>, ElementId, ElementId, bool, XYZ) 重载。",
+      "notes": "正面场景：非矩形轮廓加法向的组合。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "创建基础板的时候用 NewFoundationSlab 还是 NewFloor，怎么判断？",
+      "expected_behavior": "不应调用本 skill，理由：这是楼板/基础板的类型判别创建问题，应激活板创建判别 skill（FloorType.IsFoundationSlab 分支）。",
+      "notes": "混淆诱饵：墙重载 vs 板类型判别。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "墙建好了之后想把定位线设成端面外部，让它对齐轴线。",
+      "expected_behavior": "不应调用本 skill，理由：这是墙定位线档位设置问题（WALL_KEY_REF_PARAM），应激活墙定位线 skill；本 skill 只管创建时的重载选择。",
+      "notes": "混淆诱饵：创建重载 vs 定位线参数。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "正则表达式怎么匹配中文字符？",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 开发完全无关的文本处理问题。",
+      "notes": "完全无关请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "弧线画出来的墙算矩形轮廓还是非矩形轮廓？",
+      "expected_behavior": "边界判别：矩形/非矩形的区别在于一条 Curve 还是一组闭合曲线（IList<Curve>），不是视觉上的直线还是弧线；单条弧线墙走曲线重载，多段闭合轮廓走 IList<Curve> 重载。",
+      "notes": "边界场景：轮廓形态判别不是视觉直弧。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我想要一堵承重墙，是不是有个按结构功能选的重载？",
+      "expected_behavior": "边界判别：重载选择决策输入是参数形态不是语义需求；承重与否由 structural 参数与 WallType 功能的推导规则决定，与本 skill 的重载表是两层问题，别在重载名之间找语义。",
+      "notes": "边界场景：按语义找重载的迷失。"
+    }
+  ]
+}

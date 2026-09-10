@@ -1,0 +1,62 @@
+{
+  "skill": "revit-foundation-host-deletion",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "批量删除楼板之后，模型里留了一堆没人管的基础，怎么写个清理工具？",
+      "expected_behavior": "不依赖级联删除，显式遍历基础图元，读 INSTANCE_FREE_HOST_PARAM 判断宿主是否仍存在（为 null 或被删即孤立），只删判定为孤立的图元。",
+      "notes": "正面场景：孤立基础清理工具。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "删了主体楼板之后它下面的基础没跟着删，这是不是 bug？",
+      "expected_behavior": "说明宿主-基础关系不在删除级联范围内，删楼板基础原地留下是正常行为不是 bug；清理须显式处理。",
+      "notes": "正面场景：级联边界的正确认知。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "想查一个基础构件是挂在哪个楼板下面的，从哪个属性读？",
+      "expected_behavior": "用 Host（INSTANCE_FREE_HOST_PARAM）参数获得基础主体，而不是通用的 Host 属性——这是与 UI 直觉相反的 API 约定。",
+      "notes": "正面场景：查询基础归属。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "删除一批图元之后，想拿到完整的连带删除清单做个日志。",
+      "expected_behavior": "不应调用本 skill，理由：一般删除级联报告走 Document.Delete 的返回值（实际被删 ElementId 集合），应激活变换与删除工具 skill；本 skill 专讲基础不级联的例外。",
+      "notes": "混淆诱饵：一般级联报告 vs 基础不级联例外。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "创建基础板的时候该走 NewFoundationSlab 还是 NewFloor？",
+      "expected_behavior": "不应调用本 skill，理由：这是基础板的类型判别与创建问题，应激活板创建判别 skill；本 skill 管删除清理。",
+      "notes": "混淆诱饵：创建判别 vs 删除清理。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "浏览器缓存太多太卡了，怎么清理？",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 开发完全无关的浏览器使用问题。",
+      "notes": "完全无关请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我用基础的 Host 属性去查宿主怎么查不到？是不是 API 有问题？",
+      "expected_behavior": "边界判别：查基础宿主必须用 INSTANCE_FREE_HOST_PARAM 参数，通用 Host 属性查不到是约定使然不是 API 缺陷；两个概念不要互换。",
+      "notes": "边界场景：Host 属性 vs 参数化表达的区分。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "怎么判断一段删除操作会不会连带删掉关联的图元？有没有通用规律？",
+      "expected_behavior": "边界判别：级联边界依关系类型而定——依赖子图元会随 Document.Delete 级联，宿主-基础关系不级联；判断依据是关系类型而非图元类别，需分别处理。",
+      "notes": "边界场景：级联边界按关系类型判断。"
+    }
+  ]
+}

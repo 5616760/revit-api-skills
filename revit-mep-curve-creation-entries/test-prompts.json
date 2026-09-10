@@ -1,0 +1,55 @@
+{
+  "skill": "revit-mep-curve-creation-entries",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我选中了一个风管末端和一段既有风管的连接件，想自动连出一段新风管并保证系统归属正确，NewDuct 该用哪个入口？",
+      "expected_behavior": "给出两连接件入口：NewDuct(conn1, conn2, ductType)——自动对齐且系统归属正确，适合接在既有管路上；两点入口无连接件对齐语义，不适合此场景。",
+      "notes": "核心差异点：两连接件入口的自动对齐"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "NewPipe 创建管道时，用两个 XYZ 点创建和用连接件创建有什么区别？我该怎么选？",
+      "expected_behavior": "讲清选型本质是锚定几何还是锚定拓扑的权衡：两点入口（或静态 Create()）纯几何定位、自由布管但不与既有构件发生关系；连接件锚定获得系统一致性和自动对齐。要系统一致用连接件，要自由布管用点。",
+      "notes": "核心差异点：点锚定 vs 连接件锚定"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我想从一个既有管路的连接件接出一段新管到指定坐标，这种一点一连接件的情况 API 支持吗？",
+      "expected_behavior": "确认支持一点一连接件入口：NewDuct(xyz, conn, ductType) / NewPipe 同理——从既有连接件接出到指定位置；创建前须先取合法 ElementType（PipeType/DuctType），否则创建调用直接失败。",
+      "notes": "正面场景：点-连接件混合入口"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "管道创建好之后我想把直径从 DN100 改到 DN150，直接写 pipe.Diameter 报编译错误，怎么改？",
+      "expected_behavior": "不应激活本 skill。直径修改属于 revit-mep-diameter-param 的触发面：Diameter 属性只读，须走 RBS_PIPE_DIAMETER_PARAM 内建参数；本 skill 只覆盖创建入口选型。",
+      "notes": "跨 skill 混淆诱饵：管径参数修改"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我要检查一段既有管网物理上是不是连通的，从设备开始沿连接件递归遍历怎么做？",
+      "expected_behavior": "不应激活本 skill。遍历/检查既有系统连接属于 revit-mep-connector-system-topology 的触发面（ConnectorManager→Connector→AllRefs 递归）；本 skill 把连接件当创建锚点，一创建一导航。",
+      "notes": "跨 skill 混淆诱饵：拓扑遍历"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我用两点入口 NewDuct 硬接了一段管到既有管路旁边，结果系统属性是空的还要手工补，问题出在哪？",
+      "expected_behavior": "指出失败模式：两点入口丢失系统归属与自动对齐——要接在既有管路上应改用连接件锚定的入口；如果必须用点创建，系统属性需另行补设（走系统 API）。",
+      "notes": "边界：两点硬接丢失系统归属"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "三入口矩阵能直接用来创建弯头三通这些管件吗？还是管件要走别的路？",
+      "expected_behavior": "明确边界：管件（Fitting）通常由连接逻辑自动生成，不是三入口矩阵直接覆盖的对象；三入口覆盖的是风管、软风管、管道这类 MEPCurve 的创建。",
+      "notes": "边界：管件不在入口矩阵内"
+    }
+  ]
+}

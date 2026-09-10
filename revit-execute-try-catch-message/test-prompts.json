@@ -1,0 +1,55 @@
+{
+  "skill": "revit-execute-try-catch-message",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我的 IExternalCommand.Execute 里没写 try-catch，一抛异常 Revit 直接弹崩溃对话框，标准的安全写法是什么？",
+      "expected_behavior": "应给出标准模式：Execute 整体用 try-catch-finally 包裹；catch 块中把 message = ex.Message 并 return Result.Failed（让 Revit 以错误对话框形式向用户展示异常信息而非崩溃）；finally 块中释放资源（非托管资源、COM 引用、还原状态）。",
+      "notes": "核心场景：Execute 异常保护标准模板"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "catch 到异常之后 return Result.Cancelled 和 return Result.Failed 有什么区别？用户看到的效果一样吗？",
+      "expected_behavior": "应区分两种返回：Result.Cancelled 表示静默终止（无错误提示，用户视角是命令无动作）；Result.Failed 表示命令失败，Revit 会把 message 参数的内容作为错误信息显示给用户。异常路径应返回 Failed 并填充 message，用户取消/条件不满足才返回 Cancelled。",
+      "notes": "核心场景：Cancelled vs Failed 返回语义"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "Execute 里我开了事务，中途抛异常了，怎么保证不会留下打开的事务和半完成的修改？",
+      "expected_behavior": "应给出异常路径纪律：事务在 catch（或 finally）中 RollBack 收尾，再 return Result.Failed + message；确保事务对象不逃逸出 Execute，防止'半完成'修改残留和后续命令无法开事务的连锁故障。",
+      "notes": "核心场景：异常路径上的事务回滚"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "IExternalCommand.Execute 的三个参数 commandData、message、elements 各自的分工是什么？elements 怎么让出错的图元高亮？",
+      "expected_behavior": "不应激活本 skill。三参数语义分工（message 的 ref 语义、elements 配合 Failed 高亮）属于 revit-execute-parameter-semantics。本 skill 讲异常处理模式（try-catch-finally + message 赋值时机），虽涉及 message 但聚焦异常路径。",
+      "notes": "跨 skill 混淆诱饵：execute-parameter-semantics"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我批量创建图元后想让用户一次 Ctrl+Z 全部撤销，事务要怎么组织？",
+      "expected_behavior": "不应激活本 skill。批量修改合并撤销属于 revit-transaction-hierarchy（TransactionGroup + Assimilate）。本 skill 讲命令入口的异常防护，不涉及事务组织策略。",
+      "notes": "跨 skill 混淆诱饵：transaction-hierarchy"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我在 finally 里写 return Result.Succeeded 兜底，这样异常也能给个返回值，可以吗？",
+      "expected_behavior": "应明确禁止：finally 中 return 会吞掉正在传播的异常，Revit 收到 Succeeded 会认为命令成功，错误被完全掩盖；返回值只应在 try/catch 中给出，finally 只做清理不返回。",
+      "notes": "边界：finally 中 return 的反模式"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "catch 里我已经 RollBack 了事务，还需要 return Result.Failed 和设置 message 吗？直接 Cancelled 静默掉行不行？",
+      "expected_behavior": "应说明回滚与报告是两件事：RollBack 恢复模型状态，但用户仍需知道发生了什么；异常路径返回 Cancelled 会让失败静默，用户以为命令正常结束却什么都没发生；标准做法是 Failed + message = ex.Message 告知失败原因。Cancelled 只用于用户主动放弃的场景。",
+      "notes": "边界：回滚后仍需报告"
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "skill": "revit-intersects-filter-decisions",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我在写一个干扰检查命令，要找出和这根指定梁真正发生几何碰撞的所有构件，用什么过滤器？",
+      "expected_behavior": "激活后确定目标类型是另一个图元，选 ElementIntersectsElementFilter，并强制在其前叠加 QuickFilter（类别过滤器或 WhereElementIsNotElementType）缩圈，不允许单独全文档裸跑。",
+      "notes": "A2 场景1：碰撞/干扰检查的真实几何相交判断。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我要检查一个程序自己构造出来的 Solid（不是图元，是个预留洞口的体量）和模型里哪些构件相撞，怎么写？",
+      "expected_behavior": "激活后选 ElementIntersectsSolidFilter(customSolid)，与 WhereElementIsNotElementType() 等 QuickFilter 组合使用，形成'自定义体量 + QuickFilter 缩圈'标准结构。",
+      "notes": "A2 场景1 变体：图元 vs 自定义 Solid。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我想拿到'和这个对象不相交'的所有图元，试着给相交过滤器加了 Not，好像不生效？",
+      "expected_behavior": "激活后指出相交过滤器不可反转（'不会反转匹配在目标对象体之外的图元'），反向需求须先取相交集合 ID，再用 ExclusionFilter 或全集减相交集间接构造补集。",
+      "notes": "A2 场景3：反向集合撞上不可反转约束。"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "之前用边界框过滤有误报，现在需要对候选做精确判断把误报剔掉，该换什么？",
+      "expected_behavior": "激活后把 ElementIntersectsSolidFilter 作为几何级复核手段，只作用于 bbox 筛出的小候选集，消除误报且性能可控。",
+      "notes": "A2 场景2：bbox 误报升级到几何级精确判断。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "帮我快速找出落在这一大片区域里的大概有哪些图元就行，不用太精确，快一点。",
+      "expected_behavior": "不应调用本 skill，理由：只要空间粗筛、允许近似，用 BoundingBox 过滤器即可，不必为不需要的精确度付出 SlowFilter 代价，应触发 revit-boundingbox-filter-tradeoffs。",
+      "notes": "跨 skill 混淆诱饵：C 组邻居 revit-boundingbox-filter-tradeoffs 的触发面（区域内图元、粗筛）——本 skill B 段明确排除'只要粗筛'的情况。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "帮我梳理一下 QuickFilter、SlowFilter、LogicalFilter 各自的特点，以及一般怎么组合着用？",
+      "expected_behavior": "不应调用本 skill，理由：用户问的是三类过滤器的通用策略框架，不是相交过滤器的具体行为约束，应触发 revit-filter-quick-slow-logical。",
+      "notes": "跨 skill 混淆诱饵：C 组邻居 revit-filter-quick-slow-logical 的触发面（三类策略、组合规则）。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "帮我起草一份给甲方的设计变更说明，说明本次管线调整的原因和影响范围。",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 完全无关的文书请求。",
+      "notes": "完全无关的通用请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我前面已经把候选缩到四十来个已知 ID 了，这时候上实体相交过滤器还要不要再补一个类别过滤器？",
+      "expected_behavior": "应激活本 skill 并触发判停条件：候选集已极小（几十个已知 ID 经 IdSet 构造），可直接执行相交过滤，无需再叠加 QuickFilter 缩圈。",
+      "notes": "边界场景：小候选集下'必须配 QuickFilter'的豁免。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "用户点击拾取到的一个面，我想知道这个点是不是落在某根梁上，用相交过滤器能判断吗？",
+      "expected_behavior": "不应调用本 skill，理由：'点是否在图元上'是 Reference/拾取命中判断，不是实体相交过滤的职责（本 skill B 段明确排除项），应走 Reference/拾取 API 路径。",
+      "notes": "边界场景：'点在图元上'与'实体相交'语义边界模糊，容易误入。"
+    }
+  ]
+}

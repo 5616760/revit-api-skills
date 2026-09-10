@@ -1,0 +1,62 @@
+{
+  "skill": "revit-taskdialog-vs-dialog",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我的插件需要一个含文本框、下拉和复选框的设置窗口，TaskDialog 够用吗？还是自己画？",
+      "expected_behavior": "给出决策：TaskDialog 的控件集合是固定子集（标题、主指令、主内容、命令链接、标准按钮、DNSMA 等 12 元素），没有输入控件——需要任何'输入'或复杂布局就必须用自定义 WPF/WinForm Dialog；尝试把文本框塞进 TaskDialog 是白费功夫。",
+      "notes": "核心差异点：控件能力边界定选型"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "想弹个'确认删除？'的框，要最省事又符合 Revit 规范的做法，用什么？",
+      "expected_behavior": "给出标准答案：纯提示/确认/简单选择用 TaskDialog——统一外观、12 固定元素、与 Revit 原生弹窗一模一样，零样式代码；Title/MainInstruction/MainContent 即可实现。",
+      "notes": "核心差异点：纯提示场景 TaskDialog 是标准答案"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "TaskDialog、MessageBox 和自己写 Dialog 三者怎么选？用 MessageBox 会不会更简单？",
+      "expected_behavior": "给出三者递进：TaskDialog（Revit 统一框）→ MessageBox（WinForms 极简）→ Dialog（自定义），能力递增、原生性递减；只用 MessageBox 省事会丢失 Revit 外观与 DNSMA 能力，不推荐。",
+      "notes": "正面场景：三者能力递进"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "我用自定义 WinForm 窗口，非模态打开后直接操作文档报了异常，窗口和 Revit 的关系要注意什么？",
+      "expected_behavior": "指出线程/事务红线：自定义 Dialog 非模态打开后直接操作文档会线程/事务异常——模型访问必须在 Revit 主线程，且非模态期间事务受限；模态 ShowDialog 才安全。",
+      "notes": "核心差异点：模态 vs 非模态的访问约束"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我已经决定用 TaskDialog 了，标题格式和按钮该选 OK 还是 Close？DNSMA 的标准措辞是什么？",
+      "expected_behavior": "不应激活本 skill。选定 TaskDialog 后各组件怎么写属于 revit-taskdialog-component-rules 的触发面（标题 '<功能> — <短标题>' 格式、按钮语义、DNSMA 不缩写）；本 skill 只管'该用 TaskDialog 还是自定义 Dialog'的技术路线选型。",
+      "notes": "跨 skill 混淆诱饵：组件规范"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我想在功能区加一个下拉按钮，点开列出几个命令，这是不是也算一种对话框选型？",
+      "expected_behavior": "不应激活本 skill。Ribbon 是命令入口区（revit-ribbon-control-types / revit-ribbon-panel-layout 的领域），Dialog 是任务执行中的交互窗口，UI 层次不同，不构成 TaskDialog vs Dialog 的选型问题。",
+      "notes": "跨 skill 混淆诱饵：Ribbon 入口区"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我想要一个窗口开着的同时还能继续在 Revit 里建模操作，TaskDialog 或自定义 Dialog 能做到吗？",
+      "expected_behavior": "明确判停：非模态需求（窗口开着还能操作 Revit）TaskDialog/普通 Dialog 都不行，要走 External Events 框架（非模态期间模型访问须桥接回 Revit 主线程）；这是选型的第一问题，先于 TaskDialog/Dialog 之选。",
+      "notes": "边界：非模态需求指路 External Events"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "命令执行失败给用户看错误信息，是不是选个 Dialog 类型弹出来就行？",
+      "expected_behavior": "区分路径：命令失败的系统反馈用 message + Result（自动错误框），不是手写对话框；TaskDialog/Dialog 选型面向主动设计的交互，不覆盖失败反馈场景。",
+      "notes": "边界：失败反馈走系统错误框"
+    }
+  ]
+}

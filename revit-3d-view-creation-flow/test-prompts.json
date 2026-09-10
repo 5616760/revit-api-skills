@@ -1,0 +1,62 @@
+{
+  "skill": "revit-3d-view-creation-flow",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我想用程序自动生成一个正等轴测视图，应该调 View3D 的哪个方法？",
+      "expected_behavior": "激活后应给出流程：FilteredElementCollector 筛选 ViewFamily==ThreeD 的 ViewFamilyType，再调 View3D.CreateIsometric(doc, viewFamilyTypeId)。",
+      "notes": "正面场景：API 生成轴测图"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "怎么用 API 做出剖切轴测图？就是那种带剖面框切掉一半的三维图",
+      "expected_behavior": "激活后应指导 CreateIsometric 建视图后给 View3D.SectionBox 赋 BoundingBoxXYZ（坐标经 Transform 转全局），赋 null 隐藏剖面框。",
+      "notes": "正面场景：剖面框剖切效果"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我给三维视图的 SectionBox 赋了值但没有任何剖切效果，是为什么？",
+      "expected_behavior": "激活后应检查属性对话框中是否勾选 Section Box——未勾选时赋值不生效；这是该 skill 的关键陷阱知识。",
+      "notes": "正面场景：剖面框赋值不生效排障"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "想控制三维视图从哪个角度看模型，API 能直接改视图坐标系吗",
+      "expected_behavior": "激活后应说明 API 不支持直接修改视图坐标系，需用 ViewOrientation3D 设置 eye/target/up 三个点确定观察方向。",
+      "notes": "正面场景：观察方向设置"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "帮我写代码给每层楼自动建一个楼层平面视图",
+      "expected_behavior": "不应调用本 skill，理由：创建平面视图走 ViewPlan.Create 路径，属于 revit-2d-view-creation-paths 的触发面，本 skill 只覆盖三维视图（透视/等轴测）创建。",
+      "notes": "跨 skill 混淆诱饵：2D 视图创建 vs 3D 视图创建"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "帮我写一份项目周报模板",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit 三维视图 API 无关的通用文档请求。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "读某个三维视图的 Scale 属性得到 0，是不是视图坏了？",
+      "expected_behavior": "激活后应识别这是边界诊断：透视视图 Scale 恒为 0（无比例概念），等轴测 Scale 才是模型尺寸/视图尺寸比——返回 0 可能是透视图的正常性质而非错误。",
+      "notes": "边界：Scale=0 的正常语义 vs 真异常"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我不想要代码，就想在 Revit 界面上把剖面框勾出来调个角度",
+      "expected_behavior": "不应调用本 skill，理由：用户需求是界面操作而非 API 编程，本 skill 提供的是 View3D.CreateIsometric/SectionBox 代码路径，UI 操作指引不属于其范围。",
+      "notes": "边界：UI 操作 vs API 编程"
+    }
+  ]
+}

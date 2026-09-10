@@ -1,0 +1,55 @@
+{
+  "skill": "revit-instance-flip-state-check",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "批量把项目里的门全部换开向，跑下来总有一部分实例失败，怎么回事？",
+      "expected_behavior": "激活后应诊断失败源于未做能力位检查：逐实例先查 CanFlipHand/CanFlipFacing，仅对 true 的调用 flip 方法。",
+      "notes": "正面场景：批量翻转部分失败"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "给某些族实例设工作平面翻转的属性直接抛异常了，怎么在设之前判断能不能设？",
+      "expected_behavior": "激活后应指导先查 CanFlipWorkPlane，为 true 才设 IsWorkPlaneFlipped，把非法操作挡在异常之前。",
+      "notes": "正面场景：IsWorkPlaneFlipped 异常预防"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "镜像过的门想得到等效朝向，不用删除重建还有什么办法？",
+      "expected_behavior": "激活后应说明翻转即镜像变换：用 flipHand 等翻转组合复现镜像态，FacingFlipped×HandFlipped 两轴组合可覆盖 4 种朝向。",
+      "notes": "正面场景：翻转复现镜像"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我想把一整段梁沿着平面做镜像变换，用哪个 API？",
+      "expected_behavior": "不应调用本 skill，理由：整段几何镜像走 ElementTransformUtils.MirrorElements，属于 revit-element-transform-utils 的触发面，本 skill 只管族实例的姿态翻转轴。",
+      "notes": "跨 skill 混淆诱饵：几何镜像 vs 实例翻转"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "把一个族实例旋转 45 度怎么写代码？",
+      "expected_behavior": "不应调用本 skill，理由：任意角度旋转走 ElementTransformUtils.RotateElement 与 Location 类型判断，属于 revit-instance-rotate-location-type 的触发面，本 skill 只覆盖翻转（flip）不覆盖旋转。",
+      "notes": "跨 skill 混淆诱饵：旋转 vs 翻转"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "帮我写一个手机端的待办清单 App",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 无关的移动开发请求。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "CanFlipHand 返回 true 但 flipHand 之后门看起来还是老样子，是不是翻转没生效？",
+      "expected_behavior": "激活后应辨析边界：门有 FacingFlipped×HandFlipped 两轴组合的 4 种状态，单轴翻转可能视觉上不明显或被另一轴状态抵消，需结合两轴状态判断而非断言失败。",
+      "notes": "边界：翻转生效但视觉不明显的判定"
+    }
+  ]
+}

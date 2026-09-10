@@ -1,0 +1,62 @@
+{
+  "skill": "revit-wall-structural-usage-rules",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我建墙的时候明明传了 structural 是 false，怎么创建出来的还是承重墙？",
+      "expected_behavior": "按推导规则解释 OR 关系：structural=true 或 WallType 功能为 Foundation 任一成立即为 Bearing；structural=false 但类型功能是基础，结果仍是承重墙。",
+      "notes": "正面场景：隐式推导与显式传参冲突。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "想让一堵墙不参与房间边界的计算，有什么办法？",
+      "expected_behavior": "给出 Retaining 功能墙类型会自动推导 Room Bounding=false 的隐式路径，也可显式改 WALL_ATTR_ROOM_BOUNDING；创建前校验 WallType 功能属性。",
+      "notes": "正面场景：房间边界控制。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "写批量建墙的工具，想在创建前就预判每堵墙的结构用法。",
+      "expected_behavior": "批量创建前先读每个所用 WallType 的墙功能（Foundation/Retaining/其他），按推导规则预演结构用法与房间边界，发现非预期行为先换类型再创建。",
+      "notes": "正面场景：创建前校验类型功能。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "创建非矩形轮廓的墙，用哪个 Create 重载？",
+      "expected_behavior": "不应调用本 skill，理由：这是墙创建重载选择问题，应激活墙创建重载 skill；本 skill 管创建后的结构用法与房间边界推导。",
+      "notes": "混淆诱饵：结构属性 vs 创建重载。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "把已有墙的定位线档位改成核心面外部，位移怎么算？",
+      "expected_behavior": "不应调用本 skill，理由：这是墙定位线问题，应激活墙定位线 skill。",
+      "notes": "混淆诱饵：推导规则 vs 定位线。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "手机里的照片怎么批量传到电脑上？",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 开发完全无关的文件传输问题。",
+      "notes": "完全无关请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "用的墙类型功能是基础，structural 传了 false，最终是承重还是非承重？",
+      "expected_behavior": "边界判别：OR 关系下 Foundation 类型功能单独触发 Bearing，structural=false 不改变结果；这是隐式推导覆盖显式传参的典型，创建前必须校验类型功能。",
+      "notes": "边界场景：OR 推导的判定。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "结构用法和结构类型这两个概念是一回事吗？排错的时候看哪个？",
+      "expected_behavior": "边界判别：结构用法（Structural Usage）是墙的参数，结构类型（Structural Type）是构件分类，不同维度不可互换；本 skill 讲的是前者的推导规则。",
+      "notes": "边界场景：两个相近概念的维度区分。"
+    }
+  ]
+}

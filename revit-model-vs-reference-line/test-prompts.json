@@ -1,0 +1,48 @@
+{
+  "skill": "revit-model-vs-reference-line",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "用轮廓线创建了形状之后，原来的线怎么不见了？被谁删了吗？",
+      "expected_behavior": "激活后应解释模型线会在形状创建期间被形状'消耗'、不再独立存在，这是预期行为而非删除。",
+      "notes": "正面场景：轮廓消失之谜"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "想让形状做完之后还能拖着驱动线调形状，轮廓应该用什么线？",
+      "expected_behavior": "激活后应给参数化流程：先画模型线 → ChangeToReferenceLine() 转参照线 → 创建形状，移动参照线形状跟随更新。",
+      "notes": "正面场景：参数化驱动线"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "在 API 里找不到 ReferenceLine 类，参照线到底怎么创建？",
+      "expected_behavior": "激活后应说明 API 未提供 ReferenceLine 类，补救路径是 ModelCurve.ChangeToReferenceLine() 事后转换。",
+      "notes": "正面场景：无 ReferenceLine 类的设计缺口"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "想在概念设计环境放一些驱动点，再用点连成曲线生成形状",
+      "expected_behavior": "不应调用本 skill，理由：点驱动链路（ReferencePoint → ReferencePointArray → CurveByPoints → Form）属于 revit-referencepoint-curvebypoints 的触发面，本 skill 以线为驱动源。",
+      "notes": "跨 skill 混淆诱饵：点驱动 vs 线驱动"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "帮我查一下明天北京的天气",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 无关的生活信息请求。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "做注释的时候该用详图曲线还是模型曲线？跟参照线是一个道理吗？",
+      "expected_behavior": "激活后应说明这是同构决策的跨语境延伸：'先选线类型、后定义行为'通用，但注释语境的详图曲线/模型曲线选择不是本 skill 的核心场景（概念设计轮廓线消耗），应辨明语境后作答或部分覆盖。",
+      "notes": "边界：注释语境的同构决策"
+    }
+  ]
+}

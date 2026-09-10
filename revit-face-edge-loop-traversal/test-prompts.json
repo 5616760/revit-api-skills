@@ -1,0 +1,62 @@
+{
+  "skill": "revit-face-edge-loop-traversal",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "要把楼板顶面的外轮廓导出成闭合多段线给 CAD 用，怎么按顺序把边取出来？",
+      "expected_behavior": "遍历 Face.EdgeLoops，对每个 EdgeLoop 里的 Edge 依次调 AsCurve() 转 Curve，按参数化 0 到 1 顺序串成首尾相接的闭合环并验证首尾点重合。",
+      "notes": "正面场景：面轮廓导出为闭合环。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "怎么从 API 判断一个面上面有没有开洞？",
+      "expected_behavior": "检查 Face.EdgeLoops 的环数量：多于一个环即存在内环（洞），通常第一个为外环，但代码应按环面积或方向判断而不依赖顺序。",
+      "notes": "正面场景：带洞面的判别。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "相邻两个面共享的边拼接轮廓时方向反了，取出来的曲线跟面的朝向对不上。",
+      "expected_behavior": "说明共享 Edge 在两个面上参数方向可能相反，需与面同向时改用 AsCurveFollowingFace() 而非 AsCurve()。",
+      "notes": "正面场景：方向一致性问题。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "把整面墙的几何体完整遍历出来，所有 Solid、面、边都要。",
+      "expected_behavior": "不应调用本 skill，理由：这是从 Element 到几何树的整体提取需求，本 skill 假设已经拿到 Face，应先激活几何提取流程 skill。",
+      "notes": "混淆诱饵：依赖上游的完整提取 vs 已有 Face 的边遍历。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "读出墙上洞口的边界曲线，BoundaryCurves 返回的是什么类型？",
+      "expected_behavior": "不应调用本 skill，理由：洞口边界由 Opening API 的 IsRectBoundary 分支直接给出（BoundaryRect/BoundaryCurves），无需手工遍历 Edge，应激活洞口边界读取 skill。",
+      "notes": "混淆诱饵：API 直接给边界 vs 手工遍历边环。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "Excel 里两列数据怎么合并成一列？",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit 几何 API 完全无关的表格操作问题。",
+      "notes": "完全无关请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "导出面轮廓的时候混进了一些剖切视图切出来的边，这些是模型的真实边界吗？",
+      "expected_behavior": "边界判别：剖切视图会在模型面上制造人为边，属于视图派生几何而非模型级真实边界，导出时应识别并排除，避免混入轮廓。",
+      "notes": "边界场景：视图派生边 vs 模型级边界。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "想导出楼梯跑道的水平边界，也是手动遍历 Edge 吗？",
+      "expected_behavior": "边界判别：楼梯有现成的 GetFootprintBoundary() 封装方法，优先用 API 直接给出的边界而非手工遍历边环；EdgeLoop 遍历是没有现成 API 时的通用手段。",
+      "notes": "边界场景：现成封装 API vs 手工遍历的选择。"
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "skill": "revit-element-transform-utils",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我想把选中的那扇门绕一根竖直轴转 45 度，代码里应该调哪个类的方法？",
+      "expected_behavior": "识别为旋转变换，给出 ElementTransformUtils.RotateElement 静态方法，并在调用前确认图元非 Pinned、非组成员。",
+      "notes": "正面场景：旋转变换的 API 选择。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "要沿一段弧线摆一排柱子，而且希望改其中一根的时候其他几根跟着联动，该怎么做？",
+      "expected_behavior": "识别为关联阵列需求，选用 RadialArray 的 Create（关联）而非 WithoutAssociation，说明关联成员随源图元更新。",
+      "notes": "正面场景：关联 vs 独立阵列的选型。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我调了 Rotate() 方法，返回值是 true，但模型里这根构件根本没动，是不是哪里被锁住了？",
+      "expected_behavior": "进入变换不生效排障：检查图元是否 Pinned、是否为组成员（组成员 Move/Rotate 返回 true 但实际不动的静默陷阱）。",
+      "notes": "正面场景：变换静默失败排查。"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "程序里删掉一扇门之后，我想输出一份清单说明哪些图元被连带删除了。",
+      "expected_behavior": "使用 Document.Delete 并读取其返回的实际被删除 ElementId 集合，直接生成级联清单而不必自行推断依赖关系。",
+      "notes": "正面场景：删除级联报告。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "把这五根梁整体平移 3 米到新位置，API 层面怎么操作比较好？",
+      "expected_behavior": "不应调用本 skill，理由：这是纯移动/复制需求，属于移动/复制决策树的范畴，应激活移动决策相关 skill。",
+      "notes": "混淆诱饵：纯平移场景，应触发移动决策 skill 而非本变换工具 skill。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "族实例的 IsWorkPlaneFlipped 翻不过来，一设置就抛异常，怎么处理？",
+      "expected_behavior": "不应调用本 skill，理由：这是调整族实例翻转属性（IsWorkPlaneFlipped）的问题，不是几何变换 API 选择问题，应激活族实例翻转相关 skill。",
+      "notes": "混淆诱饵：翻转属性 vs 几何变换，应触发翻转状态检查 skill。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "帮我写个 Python 脚本，把下载文件夹里的 PDF 按年份自动归类。",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit 图元变换完全无关的通用文件处理请求。",
+      "notes": "完全无关请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "用户说想让两面墙对齐并且以后保持锁定关系，这算移动还是对齐操作？",
+      "expected_behavior": "边界判别：要建立锁定对齐关系用 ItemFactoryBase.NewAlignment()，不是把图元挪过去的移动操作；两者用途完全不同，需向用户澄清是关系约束还是位置改变。",
+      "notes": "边界场景：对齐（Alignment）与移动（Move）语义易混。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "项目是 Revit 2014 的老代码，里面用了 NewAlignment，升级到新版会不会有问题？",
+      "expected_behavior": "边界判别：NewAlignment 在部分版本中标记废弃，RotateElement 的 origin/axis 参数形态在后续版本可能有调整，落地前应核对当前版本 API 文档；本 skill 给出的是映射框架，具体签名需复核。",
+      "notes": "边界场景：Revit 2014 与新版 API 形态差异。"
+    }
+  ]
+}

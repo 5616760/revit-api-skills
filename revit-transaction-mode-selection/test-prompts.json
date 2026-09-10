@@ -1,0 +1,62 @@
+{
+  "skill": "revit-transaction-mode-selection",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "给外部命令加事务属性，Automatic、Manual、ReadOnly 三个档位到底怎么挑？我的命令要改模型，而且失败时想保留前面成功的部分。",
+      "expected_behavior": "按决策树引导：命令含写操作排除 ReadOnly；需部分提交/局部保留的精细控制 → 选 Manual，并提醒该模式下 Start/Commit/RollBack 由自己负责、返回失败时有外部事务组兜底。",
+      "notes": "正面场景：新建命令类不知道 [Transaction(...)] 属性写哪个枚举。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我这个命令就是个统计报表，只查不改，但怕以后手滑调到写 API，事务模式该怎么声明才保险？",
+      "expected_behavior": "判定纯查询 → 选 ReadOnly，说明该模式下任何写操作都会抛异常，从而从机制上保证命令永不误改模型。",
+      "notes": "正面场景：纯报表命令想确保永远不会误改模型。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "运行时报错说 ReadOnly 模式下不能创建事务，我明明只是想改个参数，这是哪出的问题？",
+      "expected_behavior": "识别 ReadOnly 档位与代码中写操作的冲突：要么把写操作去掉保持 ReadOnly，要么按需求重新选档（改 Automatic/Manual），并列出该模式允许/禁止的调用清单。",
+      "notes": "正面场景：运行时报 ReadOnly 相关错误需要排查。"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "为什么我在 Automatic 模式里 new 一个 Transaction 再 Start 会直接抛异常？事务不是我开的吗？",
+      "expected_behavior": "解释 Automatic 档位下 Revit 已在命令执行前自动创建事务，代码不能再手动 Start（只能用子事务做局部处理），给出正确写法。",
+      "notes": "正面场景：Automatic 模式手动开事务报错的典型困惑。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "档位我已经定 Manual 了，现在命令里要开多个事务，还想整批失败时全部撤销、合并成一个撤销项，这几层事务怎么组合？",
+      "expected_behavior": "不应调用本 skill，理由：事务模式已声明完毕，问题进入事务内部逻辑（Transaction/SubTransaction/TransactionGroup 分层组合），应触发 revit-transaction-hierarchy。",
+      "notes": "跨 skill 混淆诱饵：邻居 revit-transaction-hierarchy 的触发面（多事务组合与整组回滚）。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "return Result.Failed 之后，我这个命令已经改过的那些图元会被 Revit 自动撤销吗？",
+      "expected_behavior": "不应调用本 skill，理由：问题聚焦返回值如何驱动提交/回滚的结果语义，应触发 revit-command-result-undo。",
+      "notes": "跨 skill 混淆诱饵：邻居 revit-command-result-undo 的触发面（Failed 是否自动撤销）。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "帮我写一封给领导的请假邮件。",
+      "expected_behavior": "不应调用本 skill，理由：通用文书请求，与 Revit API 开发无关。",
+      "notes": "完全无关的通用请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我的 IUpdater Execute 里也要改模型，要不要在更新器类上加 TransactionMode 属性？它按哪套事务规则走？",
+      "expected_behavior": "不应调用本 skill，理由：TransactionMode 属性只约束外部命令类，Updater/事件回调等场景的事务约束不同，不能套用命令的选型决策树，应转向更新器事务规则专题。",
+      "notes": "边界场景：非命令上下文（更新器）误套命令事务模式，属本 skill 明确排除项。"
+    }
+  ]
+}

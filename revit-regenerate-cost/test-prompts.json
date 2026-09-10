@@ -1,0 +1,55 @@
+{
+  "skill": "revit-regenerate-cost",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我在循环里每修改一个参数就调一次 doc.Regenerate()，处理几百个图元要跑几十秒，怎么优化性能？",
+      "expected_behavior": "应指出 Regenerate 是高成本操作（触发文档依赖关系重算），循环内逐次 Regenerate 是典型反模式；优化方向：把批量修改合并进一个（或少量几个）大事务，循环内不做 Regenerate，利用事务 Commit 时的自动重生成，只在真正需要读取最新几何/分析数据的时间点手动 Regenerate 一次。",
+      "notes": "核心场景：循环内频繁 Regenerate 的成本"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "什么情况下必须手动调用 doc.Regenerate()，什么情况下可以不调让 Revit 自己处理？",
+      "expected_behavior": "应说明：事务 Commit 时 Revit 会自动重生成，提交前不需要手动调用；只有当在提交前就需要读取最新状态（如新建图元的 Geometry、分析模型、参数驱动结果）时才必须手动 Regenerate 一次再读取。默认策略是'不调，靠提交自动重生成'。",
+      "notes": "核心场景：手动重生成时机判断"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "批量创建图元的脚本，是每创建一个图元就 Commit 一次事务好，还是所有图元创建完最后 Commit 一次好？性能和撤销上有什么差别？",
+      "expected_behavior": "应建议合并大事务：每次 Commit 都触发一次自动重生成（成本随次数线性放大），合并为一个大事务只重生成一次，性能显著更优；同时大事务合并撤销记录（配合 TransactionGroup 可控制撤销粒度）。注意权衡：过大的事务失败时回滚代价也大。",
+      "notes": "核心场景：批量合并大事务"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我用 NewFamilyInstance 创建完图元马上读 element.Geometry，返回 null 或者数据不完整，是不是哪里没做？",
+      "expected_behavior": "不应激活本 skill。新建图元几何尚未生成、必须先 Regenerate 才能读取属于 revit-regenerate-geometry-timing 的知识。本 skill 讲重生成的成本与优化策略，不是几何可用时机。",
+      "notes": "跨 skill 混淆诱饵：regenerate-geometry-timing"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "doc.Regenerate() 抛了 RegenerationFailedException，事务处于半完成状态，我该怎么处理？",
+      "expected_behavior": "不应激活本 skill。重生成失败后的回滚纪律属于 revit-regenerate-failure-rollback：必须立即回滚当前事务。本 skill 讨论性能成本，不覆盖失败处理路径。",
+      "notes": "跨 skill 混淆诱饵：regenerate-failure-rollback"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我在一个大事务里修改了 500 个图元，中途需要读一次最新几何做分支判断，不 Regenerate 读不到新数据，Regenerate 又怕太慢，怎么办？",
+      "expected_behavior": "应给出折中方案：用 SubTransaction 包住前半段修改并 Commit 该子事务触发（范围内）重生成，读取判断数据后继续；或者接受一次全文档重生成的成本但避免循环内反复触发。说明'必须读'与'成本高'的权衡是重生成时机的本质问题。",
+      "notes": "边界：中途读取与成本权衡"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "Regenerate 的成本和文档大小、修改的图元数量分别是什么关系？小模型上感觉不出来要不要在意？",
+      "expected_behavior": "应说明重生成成本与文档依赖图的复杂度和修改波及范围相关，小模型上单次差异不明显，但批量循环中会成倍放大；性能意识应按'调用次数 × 单次成本'评估，避免在循环和频繁调用的路径上累积。",
+      "notes": "边界：成本模型的理解"
+    }
+  ]
+}

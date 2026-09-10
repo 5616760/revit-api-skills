@@ -1,0 +1,62 @@
+{
+  "skill": "revit-grid-curve-creation",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "从图纸数据批量生成一整套轴线，名称能自动按 1、2、3 编下去吗？",
+      "expected_behavior": "收集所有曲线进 CurveArray，一次调 NewGrids(curveArray) 批量创建，名称自动按数字/字母序生成，事后可改 grid.Name。",
+      "notes": "正面场景：批量建轴网。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "读弧形轴网的半径和圆心，把 Curve 直接 cast 成 Arc 可以吗？",
+      "expected_behavior": "先读 Grid.IsCurved 判别，true 时 Curve 才是 Arc 可读 Radius/Center，false 时是 Line 读 Length；盲目 cast 会崩。",
+      "notes": "正面场景：读取侧先判别再转型。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "NewGrid 创建轴网老是不成功，曲线有什么前置条件吗？",
+      "expected_behavior": "指出创建轴网的弧线或直线必须在水平面内（z 恒定），竖直面内的曲线直接被拒绝，这是轴网特有的几何约束。",
+      "notes": "正面场景：创建失败的几何前置。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "把轴网构件的几何树遍历一遍，拿它的 Solid 做分析。",
+      "expected_behavior": "不应调用本 skill，理由：轴网几何由 Grid.Curve 直接给出不需要遍历几何树，通用几何提取是手段对立的另一条路，应激活几何提取 skill。",
+      "notes": "混淆诱饵：直接属性 vs 几何树遍历。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "读出墙上洞口的边界曲线集是什么类型。",
+      "expected_behavior": "不应调用本 skill，理由：这是洞口边界读取问题（IsRectBoundary 分支），应激活洞口边界读取 skill。",
+      "notes": "混淆诱饵：轴网曲线 vs 洞口边界。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "高铁票开车前退票要扣多少手续费？",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 开发完全无关的生活咨询请求。",
+      "notes": "完全无关请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我在竖直面里画了条线建轴网被拒绝了，是不是曲线类型不对？",
+      "expected_behavior": "边界判别：与曲线类型无关，是水平面约束——创建轴网的线必须落在水平面内，竖直面曲线一律拒绝；先确认 z 恒定再建。",
+      "notes": "边界场景：水平面硬约束的归因。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "拿到的轴线不知道是直线还是弧线，直接当 Line 处理有没有风险？",
+      "expected_behavior": "边界判别：Curve 属性运行时类型由 IsCurved 决定，cast 前必须判别；直接当 Line 处理遇弧形轴会抛 cast 异常，两分支读取才是正确姿势。",
+      "notes": "边界场景：运行时类型判别。"
+    }
+  ]
+}

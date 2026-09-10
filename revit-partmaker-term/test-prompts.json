@@ -1,0 +1,55 @@
+{
+  "skill": "revit-partmaker-term",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我调了 PartUtils.CreateParts 之后马上查询新创建的零件，结果是空的，代码也没报错，零件到底创建成功了没有？",
+      "expected_behavior": "解释延迟生成机制：CreateParts 与大多数图元创建方法不同，它并不直接创建零件，而是实例化一个名为 PartMaker 的图元；真正的 Part 由 PartMaker 在重生成期间驱动产生，所以调用后立即查询得到 null 或空集合是正常现象，不是创建失败。",
+      "notes": "核心差异点：CreateParts 名不副实"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "CreateParts 之后正确的时序应该是什么样的？我什么时候才能用 GetAssociatedParts 查到零件？",
+      "expected_behavior": "给出正确时序：CreateParts → 事务提交（触发自动 Regenerate）或手动 Regenerate → 之后才能通过 GetAssociatedParts 查到实际的 Part 图元；批量场景应依赖提交时的自动重生成，避免事务内频繁手动 Regenerate。",
+      "notes": "正面场景：正确检索时序"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我在模型里看到一个叫 PartMaker 的类型，它和我分割出来的 Part 是什么关系？是不是工厂之类的模式？",
+      "expected_behavior": "解释工厂图元模式：PartMaker 是零件制造器，充当生成器按其内嵌规则在重生成期间产出另一批图元（Part）；类似的时序约束还有几何/分析模型在事务提交后才填充，但对象不同。",
+      "notes": "正面场景：PartMaker 术语理解"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我用 AssemblyInstance.Create 创建了一个部件，创建完马上就能查到它，想确认一下部件是不是也要等重生成？",
+      "expected_behavior": "不应激活本 skill。部件创建（AssemblyInstance.Create）是立即创建，没有 PartMaker 的延迟生成机制；延迟生成只属于零件（Part）路线。整体构造建模流程问题属 revit-assembly-part-modeling。",
+      "notes": "跨 skill 混淆诱饵：Assembly 立即创建"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我在事务里改了墙的参数，提交之后再读这个参数值才是新的，这是不是也是延迟生成的问题？",
+      "expected_behavior": "不应激活本 skill。普通图元'参数提交后才可见'是通用时序约束，不是 PartMaker 机制；本 skill 专讲零件创建由 PartMaker 驱动这一特定术语点。",
+      "notes": "边界外场景：通用参数时序"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "为了尽快拿到零件，我在事务里每创建一批就手动调一次 doc.Regenerate，这样做有什么问题吗？",
+      "expected_behavior": "指出成本与风险：重生成有代价，批量创建零件时应依赖事务提交时的自动重生成，避免频繁手动 Regenerate；同时注意 Regenerate 失败可能留下半完成状态，需评估是否回滚。",
+      "notes": "边界：频繁手动重生成的成本"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我提交事务后发现 Regenerate 好像失败了，模型状态有点怪，这种情况下我创建的 PartMaker 和零件怎么办？",
+      "expected_behavior": "说明判停条件：若 Regenerate 失败，先检查模型有效性——可能留下半完成状态，需要评估回滚，不能当作成功继续走统计/出量流程。",
+      "notes": "边界：Regenerate 失败的半完成状态"
+    }
+  ]
+}

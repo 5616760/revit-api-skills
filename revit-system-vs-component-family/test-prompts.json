@@ -1,0 +1,55 @@
+{
+  "skill": "revit-system-vs-component-family",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我想给项目加载一种新的基本墙类型，LoadFamily 能加载墙的 rfa 吗？",
+      "expected_behavior": "激活后应说明墙是系统族，不能加载 .rfa 也不能编辑族文件，类型经 WallType 等专用类访问。",
+      "notes": "正面场景：系统族不可载入"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "写一个通用的族分类统计工具，族名有空的有带前缀的，怎么分？",
+      "expected_behavior": "激活后应给三态分类规则：'System Family' 前缀=系统族、普通名=构件族（如 Desk）、空=体量/内建，需分别处理。",
+      "notes": "正面场景：通用过滤逻辑三态特判"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "改基本墙的族文件总是失败，系统族的类型到底在哪个类上改？",
+      "expected_behavior": "激活后应指出系统族修改走 WallType 类型属性/复合结构/参数，族文件编辑体系只服务构件族。",
+      "notes": "正面场景：系统族类型修改路径"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "WallType 和 Family 这两个类有什么区别？什么时候用哪个？",
+      "expected_behavior": "激活后应解释双轨制：系统族类型用 WallType 等专用类，构件族走 Family/FamilySymbol/LoadFamily 三元体系。",
+      "notes": "正面场景：类选择困惑"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "桌子和门这些族里，族、类型、实例三层是什么关系？",
+      "expected_behavior": "不应调用本 skill，理由：这是族三层概念模型问题，属于 revit-family-three-layer-model 的触发面，本 skill 负责系统族/构件族两大阵营的判别与 API 差异。",
+      "notes": "跨 skill 混淆诱饵：三层概念 vs 两类族判别"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "帮我订一张明天早上的闹钟提醒",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 无关的日常生活请求。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "墙的物理传热参数用 ThermalProperties 取不到，是不是要用 FamilyThermalProperties？",
+      "expected_behavior": "激活后应解释双轨制连 API 面都分裂：系统族用 ThermalProperties，构件族用 FamilyThermalProperties——属本 skill 的边界内知识（两类族的 API 分裂现象）。",
+      "notes": "边界：热工属性 API 双轨"
+    }
+  ]
+}

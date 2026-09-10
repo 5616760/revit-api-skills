@@ -1,0 +1,55 @@
+{
+  "skill": "revit-postcommand-single-limit",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我在自己的命令 A 里想连续 PostCommand 执行 Revit 内置命令 B 和 C，第二个 PostCommand 调用抛了异常，为什么只能发一个？",
+      "expected_behavior": "应指出 UIApplication.PostCommand 的单命令队列硬限制：同一时刻只能挂起一个待执行命令，第二个 PostCommand 会抛异常（部分情况下静默失败不抛）；要连发多个内置命令需排队接续而非连发。",
+      "notes": "核心场景：单命令队列限制"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我想在自己的外部命令执行完之后自动触发一个 Revit 内置命令（比如保存），PostCommand 的执行时机是怎样的？",
+      "expected_behavior": "应说明 PostCommand 的排队语义：被 Post 的命令在当前命令执行结束、控制权回到 Revit 后才执行；适用于'命令后接续内置命令'的场景，但注意单队列限制——一次只能挂一个。",
+      "notes": "核心场景：命令后接续内置命令"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "怎么避免 PostCommand 抛异常把我的命令搞崩？有没有前置检查手段？",
+      "expected_behavior": "应给出防御模式三件套：调用前用 UIApplication.CanPostCommand(commandId) 检查该命令当前是否可 Post；PostCommand 包 try-catch 防御异常/静默失败；需要连续多个命令时用事件驱动接续（前一个命令完成的事件里再 Post 下一个），避免一次连发。",
+      "notes": "核心场景：CanPostCommand + try-catch 防御"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我想拦截或者覆盖 Revit 已有的命令行为（比如替换另存为的逻辑），AddInCommandBinding 怎么用？",
+      "expected_behavior": "不应激活本 skill。命令的拦截/覆盖用 AddInCommandBinding（属于 revit-addincommandbinding-override-commands 的知识域）。本 skill 讲 PostCommand 的排队触发与单队列限制，是'发出命令'而非'接管命令'。",
+      "notes": "跨 skill 混淆诱饵：addincommandbinding-override-commands"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我的外部命令 Execute 里抛异常后 Revit 崩溃，想要标准的 try-catch-finally 防护模板。",
+      "expected_behavior": "不应激活本 skill。Execute 的异常防护模板属于 revit-execute-try-catch-message。本 skill 讲 PostCommand 的队列限制，虽也涉及'抛异常'但根因是命令队列约束而非缺少异常处理。",
+      "notes": "跨 skill 混淆诱饵：execute-try-catch-message"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我 Post 了第二个命令，既没抛异常也没执行，'静默失败'是什么情况？我怎么发现命令没发出去？",
+      "expected_behavior": "应说明静默失败形态：某些情形下第二个 PostCommand 不抛异常只是不生效；发现手段是前置 CanPostCommand 检查 + 验证命令是否真的执行（日志/结果观察），不能只依赖'没异常=成功'的假设。防御写法上仍按三件套组合。",
+      "notes": "边界：静默失败与失败感知"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "Post 出去的命令执行时我的命令早返回了，我还需要在它前后做处理（比如执行完统计），怎么接续我的逻辑？",
+      "expected_behavior": "应给出事件驱动接续模式：被 Post 的命令执行时自己的命令已结束、无法直接挂钩前后；用事件感知其完成（如监听相关文档/应用事件），在事件回调中接续统计逻辑；若需要精确的命令级挂钩，说明这是 PostCommand 模型的能力边界，需重新设计流程。",
+      "notes": "边界：命令接续的事件驱动模式"
+    }
+  ]
+}

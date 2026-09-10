@@ -1,0 +1,55 @@
+{
+  "skill": "revit-iupdater-execute-transaction-rules",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我的 IUpdater.Execute 里 new 了一个 Transaction 提交修改，Revit 报错说更新器里不能开事务，正确写法是什么？",
+      "expected_behavior": "应指出规则：Updater 的 Execute 运行在 Revit 已管理的事务（触发更新的那个事务）内部，禁止再开启新的 Transaction；正确做法是直接执行图元修改（设置参数等），修改会自动并入原事务随其提交；若需要分段产生中间状态可用 SubTransaction。",
+      "notes": "核心场景：Execute 内禁开新事务"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "用户撤销触发 updater 的那次修改时，updater 在 Execute 里做的修改会一起被撤销吗？",
+      "expected_behavior": "应确认会：Execute 中的修改自动并入触发更新的原事务，与用户修改同生共死——原事务提交则一起提交，原事务回滚/被撤销则一起消失。这是'修改并入原事务'规则的自然推论。",
+      "notes": "核心场景：修改随原事务回滚"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我的 updater 在 Execute 里更新了外部数据（写数据库、记日志），用户撤销修改后外部数据还在，两边对不上了，怎么办？",
+      "expected_behavior": "应指出外部数据不随 Revit 事务回滚：Execute 里对数据库/文件/缓存的写入不在事务保护范围内，撤销后产生不一致；缓解方向包括幂等化外部写入、以模型状态为准的可重建数据（缓存类可重建），或接受不一致并在设计上明确外部数据与模型非强一致。",
+      "notes": "核心场景：外部数据不随原事务回滚"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我的 updater 在 Execute 里调用 LoadFamily 加载族，抛了 ForbiddenForDynamicUpdateException，这是怎么回事？",
+      "expected_behavior": "不应激活本 skill。DMU 更新回调中的禁用 API 清单（LoadFamily、ViewSheet.AddView、Save/SaveAs 等）属于 revit-iupdater-forbidden-api-list。本 skill 讲事务规则（禁开新 Transaction、修改并入原事务），是另一类约束。",
+      "notes": "跨 skill 混淆诱饵：iupdater-forbidden-api-list"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我的 updater 注册了之后修改图元根本不触发 Execute，触发器和过滤器该怎么配？",
+      "expected_behavior": "不应激活本 skill。Updater 触发器注册（UpdaterRegistry.RegisterUpdater + AddTrigger + ChangeType）属于 revit-updater-registration-triggers。本 skill 只讲 Execute 执行期的事务规则。",
+      "notes": "跨 skill 混淆诱饵：updater-registration-triggers"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "Execute 里我用 SubTransaction 提交了一段修改，如果原事务最终回滚了，子事务的修改会怎样？",
+      "expected_behavior": "应说明层级关系：SubTransaction 的修改包含在外层事务内，外层（触发更新的原事务）回滚时子事务修改一并消失；子事务只提供'事务内的分段状态'，不能把修改逃逸出原事务的生命周期。",
+      "notes": "边界：子事务修改与原事务回滚"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我的 updater 修改图元后好像又触发了下一次更新，我想在 Execute 里跳过自己触发的这轮，正确做法是什么？",
+      "expected_behavior": "应给出幂等思路：Execute 开头检查目标状态是否已满足（已改过就不再改），满足则直接返回不产生新修改，从而不会再次触发；不应试图靠开新事务或其他 hack 隔离。完整的循环故障与防御体系见 revit-updater-failure-modes（衔接指路）。",
+      "notes": "边界：自触发的幂等处理（与 failure-modes 交界）"
+    }
+  ]
+}

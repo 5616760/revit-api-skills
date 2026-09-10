@@ -1,0 +1,55 @@
+{
+  "skill": "revit-view-classification-paths",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我想把模型里所有的三维视图都列出来，用 View.ViewType 筛和判断派生类有什么区别？",
+      "expected_behavior": "激活后应说明三条分类路径的精度差异：粗筛用 ViewType==ThreeD，需区分子类型时用 view is View3D，创建场景才用 ViewFamilyType。",
+      "notes": "正面场景：视图遍历 + 路径选择困惑"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "怎么判断一个视图是明细表还是普通视图？ViewType 里 Schedule 和别的值怎么用",
+      "expected_behavior": "激活后应给出 ViewType==Schedule 粗筛或 typeof(ViewSchedule) 细分的判断方案。",
+      "notes": "正面场景：识别视图大类"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我用 ViewType==ThreeD 去找透视图，结果把等轴测也混进来了，哪里出了问题",
+      "expected_behavior": "激活后应诊断 ViewType 枚举粒度不足以区分子类型，改用 view is View3D 运行时类型判别透视/等轴测。",
+      "notes": "正面场景：遍历结果误判的排障"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "复制视图的时候说要拿 ViewFamilyType 的 Id，这个东西和 ViewType 枚举是一回事吗？",
+      "expected_behavior": "激活后应解释 ViewFamilyType 是最精细的分类坐标（经 GetTypeId/GetTypeTypeId 获取），与 ViewType 枚举是两套并行体系，创建 API 只认前者。",
+      "notes": "正面场景：创建/复制视图前的类型获取"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "帮我用代码批量生成每层的楼层平面视图和剖面视图",
+      "expected_behavior": "不应调用本 skill，理由：用户要的是创建平面/剖面视图，属于 revit-2d-view-creation-paths 的触发面（ViewPlan.Create/ViewSection.CreateSection），本 skill 只管分类识别不涉及创建。",
+      "notes": "跨 skill 混淆诱饵：视图创建 vs 视图分类"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "Excel 里怎么把两列数据合并成一列？",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit 视图 API 无关的通用表格操作请求。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "用户只是想自己在项目浏览器里手动区分哪些是立面视图，让我教他在界面上看图标",
+      "expected_behavior": "不应调用本 skill，理由：用户需求是 UI 操作指引而非 API 分类路径，本 skill 提供的是代码层的 ViewType/派生类/ViewFamilyType 三路径决策，界面操作不属于其范围。",
+      "notes": "边界：UI 操作 vs API 编程"
+    }
+  ]
+}

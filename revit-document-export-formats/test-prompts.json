@@ -1,0 +1,62 @@
+{
+  "skill": "revit-document-export-formats",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我想把当前模型的几个视图导出为 DWG 文件，Document.Export 有好几个重载，该用哪个？需要配什么选项类？",
+      "expected_behavior": "给出 DWG 重载的组合（目标文件夹/文件名 + DWGExportOptions + 视图集合），导出前检查每个视图 CanBePrinted == true 否则静默失败；并说明导出的入口只有 Document.Export 重载家族，每种格式一个重载，各自要求不同的选项对象+视图集合+目标路径组合。",
+      "notes": "核心差异点：格式→重载→选项类三者匹配"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "项目要做能耗分析要导 gbXML，我在 GBXMLExportOptions 和 MassGBXMLExportOptions 之间纠结，这两个到底怎么选？",
+      "expected_behavior": "辨析易混分支：GBXMLExportOptions 面向绿色建筑模型；MassGBXMLExportOptions 仅适用于概念体量族文件。混合项目以绿色建筑模型为主时选前者；给含普通图元的项目误用体量选项会丢失普通图元语义。",
+      "notes": "核心差异点：gbXML 两选项类分流"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "为什么我在 Document.Export 里找不到导出 Navisworks NWC 的重载？是不是藏在哪里了？",
+      "expected_behavior": "明确回答：Navisworks 只能以插件导出器导出，没有普通 Export 重载可用；DWFX 本质是 XPS 封装格式，与 DWF 选项相近但签名不同，也要注意区分。",
+      "notes": "核心差异点：Navisworks 无普通重载"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "我调用了导出 API 后目录里没生成文件也没抛异常，脚本看起来'成功'了，可能是什么问题？",
+      "expected_behavior": "指出导出前置条件：导出所用的每个视图必须 CanBePrinted == true，否则静默失败（无文件无报错）；模板视图/隐藏视图是典型来源，需先过滤视图集合，另查目标路径写权限与视图集合非空。",
+      "notes": "正面场景：静默失败排查"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "导出 DWG 时公司要求墙类别必须映射到 WALL 图层、颜色 31，我该怎么改 ExportLayerTable 里的条目？",
+      "expected_behavior": "不应激活本 skill。这是选定 DWG 格式之后的 CAD 映射表配置问题，属于 revit-dwg-export-tables 的触发面（GetExportLayerTable/ExportLayerInfo/SetExportLayerTable）；本 skill 只管格式与重载选型。",
+      "notes": "跨 skill 混淆诱饵：DWG 图层映射表"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "内置的 IFC 导出不满足我们的 schema 要求，我想实现 IExporterIFC 接口接管整个导出过程，该怎么注册？",
+      "expected_behavior": "不应激活本 skill。用户要替换导出实现本身，属于 revit-ifc-exporter-registration 的触发面（ExporterIFCRegistry.RegisterIFCExporter，应用程序级单例先到先得）；本 skill 只用内置导出程序。",
+      "notes": "跨 skill 混淆诱饵：自定义导出器接管"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我其实是想把外部 DWG 导入到 Revit 里来翻模，导入和导出用的是同一套 API 吧？",
+      "expected_behavior": "明确边界：导入 API 与导出体系完全不同，本 skill 不适用导入需求；导出只有 Document.Export 重载家族这一个入口。",
+      "notes": "边界：导入非导出"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我要批量出图打印交付，不是做格式交换，是不是也走 Document.Export 这套？",
+      "expected_behavior": "明确边界：批量出图打印（Plot）走打印/PrintManager 相关 API，不是导出 API；只有把文件或图元/视图转为其他格式时才用 Document.Export。",
+      "notes": "边界：打印非导出"
+    }
+  ]
+}

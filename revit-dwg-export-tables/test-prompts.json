@@ -1,0 +1,62 @@
+{
+  "skill": "revit-dwg-export-tables",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "公司 CAD 标准要求所有墙类别导出 DWG 后落在 WALL 图层、颜色 31，我不想每次在 UI 里手动设置，代码怎么做？",
+      "expected_behavior": "给出'拿选项→改表→写回'套路：取或新建 DWGExportOptions → GetExportLayerTable() 读出表 → 将墙类别条目改为 ExportLayerInfo（LayerName=\"WALL\"、颜色等字段）→ SetExportLayerTable(table) 写回 → 随 doc.Export() 生效；五张表分别为图层/线型/填充图案/字体/线宽映射。",
+      "notes": "核心差异点：五张映射表+改表写回"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "用户已经在 UI 里调好了一套导出设置，我的插件想直接沿用这套预设而不是硬编码选项，有办法吗？",
+      "expected_behavior": "给出复用预设路径：BaseExportOptions.GetPredefinedSetupNames(doc) 列出文档已有预设名，再把名字传给对应选项类的静态 GetPredefinedOptions(doc, setupName) 取现成选项；注意预设名大小写/全半角拼写必须完全匹配，否则拿到空结果。",
+      "notes": "核心差异点：GetPredefinedOptions 复用 UI 预设"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "导出的 DWG 在平面和立面里墙的颜色不一样，我明明在图层表里设置过颜色了，哪里漏了？",
+      "expected_behavior": "指出失败模式：投影颜色与剖切颜色是两个字段——ExportLayerInfo 的颜色（ColorName）与剖切颜色（CutColorNumber）需分别设置，只改一个会导致平面/立面导出颜色不一致。",
+      "notes": "核心差异点：投影色与剖切色成对设置"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "三种 CAD 格式的导出选项是什么关系？DWG、DXF、DGN 各自要单独配一套吗？",
+      "expected_behavior": "说明同族共享：DWG/DXF/DGN 的导出选项都派生自 BaseExportOptions，共享颜色模式、是否隐藏范围框等通用设置；映射表体系（图层/线型/图案/字体/线宽）同族通用，配置可复用。",
+      "notes": "正面场景：三格式同族共享 BaseExportOptions"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我还不知道该导出成 DWG 还是 IFC，Document.Export 有哪些重载、每种格式配什么选项类？",
+      "expected_behavior": "不应激活本 skill。用户还处在格式决策阶段，属于 revit-document-export-formats 的触发面——先选定格式与重载，再回来配置映射表；本 skill 是选定 CAD 格式后的配置层。",
+      "notes": "跨 skill 混淆诱饵：格式选型"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我要导出 gbXML 做能耗分析，应该怎么映射类别和图层？",
+      "expected_behavior": "不应激活本 skill。gbXML 是非 CAD 格式，没有这五张映射表，各有自己的选项体系（GBXMLExportOptions/MassGBXMLExportOptions）；应转 revit-document-export-formats。",
+      "notes": "边界外场景：非 CAD 格式"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我改了图层表之后导出，结果 DWG 里的图层还是旧的映射，改表没生效，代码哪一步错了？",
+      "expected_behavior": "指出典型失败：改表后忘记 SetExportLayerTable(table) 写回选项对象，导出仍用旧映射；应确认 Get→改→Set 写回完整链路，导出后在 CAD 中抽查图层名/颜色/线型验证。",
+      "notes": "边界：忘记写回表的失败模式"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "图纸交付方退回说字体和线宽也要符合标准，这属于图层表的事还是另外的表？",
+      "expected_behavior": "说明五张表分工：字体对应 ExportFontTable，线宽对应 ExportLineweightTable，图层只是其中一张；标准里的每条规则要落到对应的表（图层/线型/填充图案/字体/线宽）再分别写回，不能都塞进图层表。",
+      "notes": "边界：多张表的分工"
+    }
+  ]
+}

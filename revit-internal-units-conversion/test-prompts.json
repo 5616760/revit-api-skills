@@ -1,0 +1,55 @@
+{
+  "skill": "revit-internal-units-conversion",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我用 parameter.AsDouble() 读墙的长度，返回 13.1234，但用户说这墙明明是 4000mm，是不是哪里读错了？",
+      "expected_behavior": "解释内部单位：AsDouble 返回内部单位裸值，长度一律英尺——13.1234 英尺≈4000mm 属正常；展示给用户须用 AsValueString()（项目单位格式化字符串，如 \"200\"）或 UnitUtils.ConvertFromInternalUnits(value, DisplayUnitType) 换算。",
+      "notes": "核心差异点：内部裸值 vs 显示值"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我的插件让用户输入 3000（毫米）想写入参数，直接 Set 之后模型里变成了 3000 英尺，怎么正确转换？",
+      "expected_behavior": "给出写入侧换算：用户输入先用 ConvertToInternalUnits(value, DisplayUnitType) 转回内部单位再 Set，或用 SetValueString 让 API 按项目单位解析；裸值跨过转换直接写入是错 25.4 倍量级的经典 bug。",
+      "notes": "核心差异点：写入侧显式转换"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "创建墙的时候高度参数我应该填什么单位？用户界面上看到的和我代码里要传的一样吗？",
+      "expected_behavior": "明确规则：所有 Create 类 API 的尺寸参数都要求内部单位（长度为英尺）；用户输入值须先 ConvertToInternalUnits 转换后再传入创建调用。",
+      "notes": "正面场景：几何创建的单位语义"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我读一个参数前想确认它用 AsDouble 还是 AsInteger 还是 AsString，这个看什么属性？",
+      "expected_behavior": "不应激活本 skill。这是参数存储类型问题，属于 revit-parameter-storage-types 的触发面（先看 StorageType 定 Get/Set 方法）；本 skill 讲取到值之后的单位语义。",
+      "notes": "跨 skill 混淆诱饵：StorageType 判断"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "get_Parameter 这个调用到底怎么写，按名字取参数和按 BuiltInParameter 取有什么语法区别？",
+      "expected_behavior": "不应激活本 skill。这是参数获取的调用语法问题，属于 revit-indexed-property-get-set 的触发面；本 skill 是取到值之后怎么理解单位。",
+      "notes": "跨 skill 混淆诱饵：取参调用语法"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我读的参数是'构件数量'这种整数参数，还有 YesNo 开关，读出来也要做英尺换算吗？",
+      "expected_behavior": "明确判停：整数/枚举/无单位参数（构件数量、YesNo）与字符串参数没有单位概念，不涉及单位换算，直接按其数据类型读取即可。",
+      "notes": "边界：无单位参数不换算"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "长度是英尺、其他基本量是公制，那我推导一下力的单位换算公式自己写个系数行不行？",
+      "expected_behavior": "禁止手推：因为长度用英制、其他基本量用公制，涉及长度的导出单位（如力 = kg·ft/s²）均为非标准组合，手写换算公式必错；铁律是显示与存储之间永远用 UnitUtils 做显式转换。",
+      "notes": "边界：导出单位手推换算的陷阱"
+    }
+  ]
+}

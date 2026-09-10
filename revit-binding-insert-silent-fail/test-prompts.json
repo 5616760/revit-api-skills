@@ -1,0 +1,69 @@
+{
+  "skill": "revit-binding-insert-silent-fail",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我在用 BindingMap.Insert 把共享参数绑到墙类别上，代码跑完没报错，但参数根本没出现在属性面板里，怎么回事？",
+      "expected_behavior": "指出 BindingMap.Insert 静默失败特性：绑定失败时不抛异常而是返回 false，必须检查返回值；建议调用前用 Contains 预检 BindingMap 中是否已存在同一定义的绑定，避免静默冲突。",
+      "notes": "正面场景：Insert 返回 false 不抛异常"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我写了个循环给多个类别绑定共享参数，有些类别成功有些失败，但程序看起来全部正常结束。我该怎么调试 BindingMap.Insert 这种不报错的问题？",
+      "expected_behavior": "给出静默失败的调试方案：逐类别检查 Insert 的 bool 返回值并记录日志；对每个类别先用 Contains 检测已有绑定；说明常见失败原因（同名定义重复绑定、类别不允许该绑定类型等）。",
+      "notes": "正面场景：批量绑定部分失败的调试"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "BindingMap.Insert(string, Definition, Binding) 的返回值是 bool，这个返回值什么时候会是 false？我该不该忽略它？",
+      "expected_behavior": "明确说明返回 false 表示绑定未成功建立且无异常抛出，绝不能忽略；列出典型 false 场景（重复绑定同一参数定义到同类别、定义无效等），并给出 Contains 预检 + 返回值断言的代码模式。",
+      "notes": "正面场景：API 返回值语义提问"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "我的插件安装后用户反馈参数没绑上，日志里也没有异常。听说 Revit API 有些方法失败是静默的，绑定参数这块有什么坑？",
+      "expected_behavior": "确认 BindingMap.Insert 属于静默失败类 API；给出防御性写法：Contains 预检、检查 Insert 返回值、失败时显式记录并反馈用户；提醒在事务内执行绑定操作。",
+      "notes": "正面场景：生产环境静默失败排查"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我给共享参数建绑定的时候，不知道该用 TypeBinding 还是 InstanceBinding，希望墙类型统一一个值，是不是该用 TypeBinding？",
+      "expected_behavior": "不应激活本 skill。该问题属于类型绑定与实例绑定的选择差异，应走 revit-binding-type-vs-instance：解释 TypeBinding 同类型实例共享值、InstanceBinding 每实例独立值的语义区别。本 skill 只关注 Insert 静默失败检测，不涉及绑定类型选型。",
+      "notes": "跨 skill 混淆诱饵：绑定类型选择 vs 绑定失败检测"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "程序启动时我该怎么设置 SharedParametersFilename 然后打开共享参数文件？现在调用 OpenSharedParameterFile 报文件无效。",
+      "expected_behavior": "不应激活本 skill。该问题是共享参数文件初始化顺序问题，应走 revit-shared-parameter-file-init：必须先设置 app.SharedParametersFilename 指向有效文件再调用 OpenSharedParameterFile。本 skill 关注的是绑定插入的返回值检测。",
+      "notes": "相邻主题诱饵：共享参数文件初始化"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "我想在文档里查找某个共享参数的 GUID 对不对，怎么用 Definition 的 GUID 验证参数是不是我定义的那个？",
+      "expected_behavior": "不应激活本 skill。该问题是共享参数 GUID 校验问题，应走 revit-shared-parameter-guid-check：用定义级 GUID 在 SharedParameterElement 或 DefinitionFile 中匹配。本 skill 只处理绑定插入的静默失败。",
+      "notes": "相邻主题诱饵：参数 GUID 校验"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我先调 Contains 检查说没有这个绑定，然后 Insert 返回了 true，但面板里参数还是不显示，这算 Insert 静默失败吗？",
+      "expected_behavior": "说明 Insert 返回 true 表示绑定结构层面已建立，此时问题通常不在 Insert 本身：可能参数分组不可见、定义与类别不匹配或未提交事务；引导区分绑定成功与参数可见性问题，不要误判为 Insert 失败。",
+      "notes": "边界情形：返回 true 但效果不可见"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "同一个共享参数定义，我先绑了 InstanceBinding 成功，后来又想改成 TypeBinding 再 Insert 一次，返回 false 但没异常。这种情况 Contains 也会拦住我吗？",
+      "expected_behavior": "说明同一 Definition 不能同时绑两种绑定类型：已有 InstanceBinding 时再插 TypeBinding 会被拒绝（返回 false 静默失败），Contains 检测到旧绑定存在时应先移除旧绑定再插入新类型；此处与 revit-binding-type-vs-instance 的规则交叠，需指出换绑的正确流程。",
+      "notes": "边界情形：换绑类型与静默失败交叉"
+    }
+  ]
+}

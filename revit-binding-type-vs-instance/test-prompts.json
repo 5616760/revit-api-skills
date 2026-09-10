@@ -1,0 +1,62 @@
+{
+  "skill": "revit-binding-type-vs-instance",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我希望所有同类型的墙共享一个参数值，改一处全类型生效，应该用 TypeBinding 还是 InstanceBinding？",
+      "expected_behavior": "应选 TypeBinding：参数值存储在类型上，同类型所有实例共享同一值，改类型参数即全量生效；InstanceBinding 则每实例独立持有自己的值。给出 BindingMap.Insert 传入对应 Binding 对象的写法。",
+      "notes": "正面场景：类型共享值需求"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我给族实例绑了 InstanceBinding 的共享参数，为什么每个实例的参数值互不影响？我想做成类型级的统一值要怎么办？",
+      "expected_behavior": "解释 InstanceBinding 语义：每个图元实例独立存值，互不联动；要类型级统一值需改用 TypeBinding，并注意同一 Definition 不能同时绑两种绑定类型，需先处理旧绑定再插入。",
+      "notes": "正面场景：实例值不联动的困惑"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "TypeBinding 和 InstanceBinding 有什么区别？什么场景选哪个？",
+      "expected_behavior": "给出对比核心：TypeBinding 的参数值挂在族类型上、同类型实例共享（类似类型参数）；InstanceBinding 的值挂在每个图元实例上（类似实例参数）；按数据是规格级还是逐个图元级来选；提醒同一 Definition 不能同时绑定两种。",
+      "notes": "正面场景：概念对比提问"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "我做了个\"防火等级\"参数，设计意图是按墙类型统一指定，但我用了 InstanceBinding，现在每面墙都要单独填，怎么改成类型共享？",
+      "expected_behavior": "确认这是绑定类型选型错误：规格级数据应走 TypeBinding；说明迁移路径——移除现有 InstanceBinding 后以 TypeBinding 重新 Insert，并警告换绑时同一定义不能同时存在两种绑定。",
+      "notes": "正面场景：绑定选型纠错"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我调用 BindingMap.Insert 绑定参数后返回了 false，也没有异常，怎么排查绑定没成功的问题？",
+      "expected_behavior": "不应激活本 skill。该问题是 Insert 静默失败检测，应走 revit-binding-insert-silent-fail：用 Contains 预检并检查返回值。本 skill 只讲两种绑定类型的语义差异，不处理绑定失败的排查。",
+      "notes": "跨 skill 混淆诱饵：Insert 静默失败 vs 绑定类型选择"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我在项目里遍历所有墙实例读取参数值，get_Parameter 找不到我绑定的参数，是不是参数检索方式不对？",
+      "expected_behavior": "不应激活本 skill。该问题是参数检索路径选择，应走 revit-parameter-index-lookup：按名称/枚举/GUID/Definition 四种路径选合适检索方式。本 skill 只讨论绑定类型语义。",
+      "notes": "相邻主题诱饵：参数检索"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "能不能让同一个共享参数定义既绑 TypeBinding 又绑 InstanceBinding？我想两种用法都保留。",
+      "expected_behavior": "明确不可行：同一 Definition 不能同时绑定两种绑定类型，这是 Revit 参数模型约束；只能为不同用途定义两个独立的共享参数（各自 GUID 不同）分别绑定。",
+      "notes": "边界情形：双绑定冲突约束"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "族样板里的类型参数和项目里的 TypeBinding 是一回事吗？我在族编辑器里建的参数跟 BindingMap 插的有什么关系？",
+      "expected_behavior": "区分族内参数机制与项目级 BindingMap：族编辑器中的参数在族文件内定义（含类型/实例属性），而 BindingMap.Insert 是在项目文档层面把共享参数定义绑到类别上；两者语义上类型/实例的区分一致，但作用域和创建路径不同。",
+      "notes": "边界情形：族参数与项目绑定的作用域混淆"
+    }
+  ]
+}

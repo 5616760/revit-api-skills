@@ -1,0 +1,55 @@
+{
+  "skill": "revit-addincommandbinding-override-commands",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我想在特定模型状态下禁用 Revit 的\"编辑设计选项\"内置命令，让按钮灰掉，插件能做到吗？",
+      "expected_behavior": "给出 AddInCommandBinding 框架：RevitCommandId.LookupCommandId(\"ID_EDIT_DESIGNOPTIONS\")（或从 Revit 日志 Jrn.Command 条目提取 ID 字串）取命令 ID → 确认 commandId.CanHaveBinding → OnStartup 中 UIApplication.CreateAddInCommandBinding(commandId) → 订阅 CanExecute 事件在禁用上下文返回 false，命令入口即灰化，无需轮询拦截；OnShutdown 中移除绑定。",
+      "notes": "正面场景：上下文禁用内置命令（CanExecute 灰化）"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我想给某个内置命令加\"执行前记录日志、执行后自动检查\"的钩子，AddInCommandBinding 的三个事件分别怎么用？",
+      "expected_behavior": "说明三个事件覆盖命令生命周期：BeforeExecuted 命令执行前触发（前置准备/记录）、CanExecute 返回 false 时命令被禁用（灰化）、Executed 命令执行后触发（后处理/检查）；绑定在 OnStartup 建立、OnShutdown 移除，生命周期成对。",
+      "notes": "正面场景：内置命令前后注入逻辑"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我想重写一个 Revit 内置命令，但不知道它的命令 ID 字串是什么，怎么找到 ID_XXX 这种标识？",
+      "expected_behavior": "给出定位命令 ID 的路径：优先 LookupPostableCommandId(PostableCommand 枚举)；否则从 Revit 日志的 Jrn.Command 条目里挖——让用户手动执行一次该命令，日志里就有对应 ID 字串，再 LookupCommandId 查找。",
+      "notes": "正面场景：从日志 Jrn.Command 提取命令 ID"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我想让插件替用户自动执行\"保存\"这个内置命令，用命令绑定把保存接管过来自己调用可以吗？",
+      "expected_behavior": "不应激活本 skill。\"替用户执行命令\"应走 revit-postcommand-single-limit 的 PostCommand（向外发起命令），不是绑死命令；本 skill 是向内拦截/接管（AddInCommandBinding），两者共用 RevitCommandId 体系但方向相反；PostCommand 有每次只能挂起一个命令等硬限制。",
+      "notes": "跨 skill 混淆诱饵：PostCommand 发起 vs CommandBinding 拦截"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我自己插件的外部命令按钮想在没选中墙的时候灰显，是不是也要用 AddInCommandBinding 的 CanExecute？",
+      "expected_behavior": "不应激活本 skill。控制的是\"自己的外部命令\"按钮可用性，应走 revit-command-availability：实现 IExternalCommandAvailability.IsCommandAvailable(UIApplication, CategorySet) 并在 .addin 填 AvailabilityClassName。CommandBinding 控制的是 Revit 内置命令，对象不同。",
+      "notes": "跨 skill 混淆诱饵：外部命令可用性 vs 内置命令绑定"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我给一个内置命令建绑定时没检查 CanHaveBinding，有的命令绑定后行为很怪，是哪里的问题？",
+      "expected_behavior": "指出未检查 CanHaveBinding 直接绑定是书中警告的失败模式——不是所有命令都能被重写，部分命令绑定失败或行为未定义；判停条件：CanHaveBinding 为 false 时告知用户该命令不可重写，改用事件拦截或 UI 移除方案；另注意部分核心命令（如保存相关）在新版中不可绑定或行为有调整。",
+      "notes": "边界情形：CanHaveBinding 为 false 的命令"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我想拦截用户\"保存/关闭文档\"这类操作并阻止它，用命令绑定还是别的方式更合适？",
+      "expected_behavior": "说明边界：要拦截的是文档级操作（保存/关闭）→ 用可取消事件（如 DocumentSaving 系列），不必动命令；事件取消是操作发起后否决，CanExecute 灰化是事前禁用入口，两者体验不同；此场景属于本 skill 的明确排除项，可指向 revit-cancelable-events-propagation。",
+      "notes": "边界情形：文档级操作拦截应走可取消事件"
+    }
+  ]
+}

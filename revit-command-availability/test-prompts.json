@@ -1,0 +1,55 @@
+{
+  "skill": "revit-command-availability",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我做了个\"墙分析\"命令，希望没选中墙的时候按钮是灰的、选中至少一面墙才能点，该怎么实现？",
+      "expected_behavior": "给出实现：新建类实现 IExternalCommandAvailability，在 IsCommandAvailable(UIApplication application, CategorySet selectedCategories) 里检查 CategorySet 是否含 BuiltInCategory.OST_Walls（空选集或选中墙时返回 true）；返回 true 按钮可用、false 灰显，选择集变化时 Revit 自动调用该方法实时联动。",
+      "notes": "正面场景：选中墙才可点的经典用途"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "IsCommandAvailable 这个接口方法的签名是什么样的？第二个参数 CategorySet 是什么内容，返回值怎么影响按钮？",
+      "expected_behavior": "说明签名：IsCommandAvailable(UIApplication application, CategorySet selectedCategories)；CategorySet 是当前选中图元所属类别的集合（Revit 所选项类别传给应用）；返回 true → 按钮可用，false → 灰显；典型逻辑是检查类别是否包含目标类别。",
+      "notes": "正面场景：方法签名与参数语义"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我实现了 IExternalCommandAvailability 但按钮永远可以点，可用性判断完全不生效，是哪里没接上？",
+      "expected_behavior": "指出接线问题：可用性类的全名（命名空间.类名）必须填进 .addin 清单对应命令条目的 AvailabilityClassName 字段；拼错或未注册时按钮永不灰显（默认可点），逻辑形同虚设；核对拼写与命名空间后重启 Revit 验证。",
+      "notes": "正面场景：AvailabilityClassName 未生效的排查"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我想让我的按钮只在项目文档里显示、族文档里隐藏，IExternalCommandAvailability 能做到吗？",
+      "expected_behavior": "不应激活本 skill。按\"当前文档是项目还是族\"这类静态条件显隐属于声明式配置，应走 revit-command-visibility-mode（.addin 的 VisibilityMode/Discipline）。本 skill 是基于实时选集的动态可用性判断，静态显隐是明确排除项。",
+      "notes": "跨 skill 混淆诱饵：VisibilityMode 静态显隐 vs 动态可用性"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我想把 Revit 自带的\"删除\"内置命令在受控模型里禁用掉，是不是也写个 IsCommandAvailable？",
+      "expected_behavior": "不应激活本 skill。禁用/重写 Revit 内置命令应走 revit-addincommandbinding-override-commands：CreateAddInCommandBinding + CanExecute 返回 false 灰化内置命令。IsCommandAvailable 控制的是自己的外部命令按钮，CommandBinding 控制内置命令，对象不同。",
+      "notes": "跨 skill 混淆诱饵：内置命令禁用 vs 外部命令可用性"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我在 IsCommandAvailable 里遍历整个文档检查模型状态，Revit 用起来变卡了，这个方法是不是被调得很频繁？",
+      "expected_behavior": "指出失败模式：每当选择集变化都会调用 IsCommandAvailable，里面做重活（如遍历文档）会拖慢 UI；可用性判断应轻量（只查 CategorySet），重校验应前置到命令执行时或改用其他机制；同时提醒返回逻辑要与命令实际前提相符，否则按钮可点但执行即报错。",
+      "notes": "边界情形：回调里做重活的性能陷阱"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "用户什么都没选的时候 CategorySet 传进来的是什么？我的按钮希望空选集时也能点，返回值该怎么写？",
+      "expected_behavior": "说明空选集行为是书中未详细讨论的场景：CategorySet 为空集（书中案例\"空选集或至少选中一面墙时返回 true\"的处理方式是显式放行空集）；按业务需求决定空集返回 true（命令不依赖选集）或 false（必须有选区）；注意多个命令共享同一可用性类时空集行为要统一。",
+      "notes": "边界情形：空选集的 CategorySet 行为"
+    }
+  ]
+}

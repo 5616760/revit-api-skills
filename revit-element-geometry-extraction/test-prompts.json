@@ -1,0 +1,69 @@
+{
+  "skill": "revit-element-geometry-extraction",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我想把这面墙所有的体、面和边都拿出来，算一下体积和表面积，遍历流程怎么写？",
+      "expected_behavior": "构造 Geometry.Options 后从 Element.Geometry 入口遍历 GeometryElement，对 GeometryObject 按类型分派：Solid 再进 Faces/Edges，Curve 直接收集。",
+      "notes": "正面场景：几何提取主干流程。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "做钢构算量，需要梁在被连接、切割之前的净尺寸，用哪个入口取几何？",
+      "expected_behavior": "不用 Element.Geometry（当前状态几何），改用 FamilyInstance.GetOriginalGeometry(options) 取原始几何，并说明两者语义差异。",
+      "notes": "正面场景：当前几何 vs 原始几何的入口选择。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "遍历梁的几何树，拿到一个 GeometryInstance 就停了，里面的体怎么展开出来？",
+      "expected_behavior": "对 GeometryInstance 调用 GetInstanceGeometry(geomInst.Transform) 带 Transform 递归展开，直到不再出现新的 GeometryInstance。",
+      "notes": "正面场景：GeometryInstance 递归展开。"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "我只要梁的轴线做定位，有必要把整个几何树遍历一遍吗？",
+      "expected_behavior": "判停进入驱动线分支：直接从 FamilyInstance.Location 取 LocationCurve，不必进入几何树遍历。",
+      "notes": "正面场景：驱动线分支避免过度遍历。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "从天窗的位置垂直向下打一条光线，找它正下方最近的楼面量距离。",
+      "expected_behavior": "不应调用本 skill，理由：这是光线投影命中查询需求，应激活 ReferenceIntersector 光线投影相关 skill，手段是查命中而非遍历几何树。",
+      "notes": "混淆诱饵：取几何 vs 查命中，应触发光线投影 skill。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "把这个面的外边界按顺序拼成闭合的多段线导出到 CAD 里用。",
+      "expected_behavior": "不应调用本 skill，理由：这是把面边界导出为闭合曲线环的需求，应激活 Face 边缘遍历相关 skill（EdgeLoops 逐边展开）。",
+      "notes": "混淆诱饵：几何树遍历 vs 面边界环导出，应触发边环遍历 skill。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "git 里怎么撤销一次已经 push 上去的提交？",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit 几何 API 完全无关的版本控制问题。",
+      "notes": "完全无关请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "提取出来的几何里找不到中心平面和风管的保温层，是不是遍历漏了？",
+      "expected_behavior": "边界判别：这不是遍历流程问题而是 Options 参数问题，应转 Options 可见性与详细程度 skill（IncludeNonVisibleObjects 默认 false 排除条件几何）；若调参后仍缺且需求是原始几何，才回到本 skill 换 GetOriginalGeometry 入口。",
+      "notes": "边界场景：几何缺失到底是流程问题还是 Options 参数问题。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "提取几何的目的是之后拿这些面去创建尺寸标注，跟纯算量有什么不一样？",
+      "expected_behavior": "边界判别：算量用副本几何即可；要创建尺寸标注需要面带有效 Reference，构造 Options 时须开 ComputeReferences=true，并注意符号几何与实例几何的副本语义差异，两套需求走不同配置。",
+      "notes": "边界场景：分析用几何 vs 创建参照用几何。"
+    }
+  ]
+}

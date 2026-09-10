@@ -1,0 +1,62 @@
+{
+  "skill": "revit-parameter-storage-types",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "ParameterType 和 StorageType 有什么区别？我创建参数的时候该搞清楚哪个？",
+      "expected_behavior": "给出双分类核心：ParameterType 是语义类型（约 15 种，如 Length、Area、Text、YesNo 等），决定参数在界面呈现与单位含义；StorageType 是底层存储格式（5 种：Double、Integer、String、ElementId、None），决定该用 AsDouble/AsInteger/AsString/AsElementId 哪个方法读写。",
+      "notes": "正面场景：双分类概念对比"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我读一个参数用 AsDouble 直接抛异常了，是不是要先用 StorageType 判断？具体怎么判断？",
+      "expected_behavior": "确认思路：取值方法必须与 parameter.StorageType 匹配；给出判断模式——switch StorageType 分别用 AsDouble/AsInteger/AsString/AsElementId 取值，否则类型不匹配会失败。",
+      "notes": "正面场景：StorageType 分派取值"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我建了个类别型参数（选类别的那种），它的值存的是什么？为什么读出来是负的 ElementId？",
+      "expected_behavior": "说明类别/图元引用型参数以 ElementId 存储，用 AsElementId 读取；引出 ElementId 负值陷阱：负值枚举是 Revit 的特殊编码（如 -1 表示自动检测\"按类别自动\"等组合选项），不能当普通正整数 Id 解析。",
+      "notes": "正面场景：ElementId 存储与负值陷阱"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "我想让用户在参数里选 Yes/No，建参数的时候 ParameterType 该选什么？读值的时候用什么方法？",
+      "expected_behavior": "指出 YesNo 语义类型对应底层 Integer 存储：ParameterType 用 YesNo（界面呈复选框），取值按 StorageType 为 Integer 用 AsInteger 读（非零为真）；体现语义类型与存储格式分离的典型例子。",
+      "notes": "正面场景：YesNo 的语义与存储分离"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我想改墙的底部偏移这类几何量，直接改几何不行吗？该用哪个 BuiltInParameter 枚举？",
+      "expected_behavior": "不应激活本 skill。该问题是内建参数语义与几何只读约束，应走 revit-builtin-parameter-semantics：几何属性只读，须通过 BuiltInParameter 参数 Set 写入。本 skill 讲参数类型双分类与取值方法。",
+      "notes": "跨 skill 混淆诱饵：枚举写参数 vs 存储类型"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "get_Parameter 用字符串还是枚举还是 GUID 检索更稳？我在多语言环境下总查不到参数。",
+      "expected_behavior": "不应激活本 skill。该问题是检索路径选择，应走 revit-parameter-index-lookup。本 skill 关注参数的类型分类与存取方法，不涉及检索方式选型。",
+      "notes": "相邻主题诱饵：检索路径选型"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "长度参数读出来是 304.8 这种奇怪的数，是不是 StorageType 弄错了还是单位问题？",
+      "expected_behavior": "说明这不是存储类型错误而是内部单位问题：Revit 内部长度以英尺存储，界面显示跟随项目单位；AsDouble 读到的是内部单位值，需按场景换算（如乘 304.8 得毫米）；StorageType 判断本身仍然正确。",
+      "notes": "边界情形：内部单位与存储类型混淆"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "有些参数 StorageType 是 None，这是什么情况？还能读值吗？",
+      "expected_behavior": "说明 StorageType 为 None 表示该参数无底层存储值（通常是只读的推导/占位参数）；不能用任何 AsXxx 取得有效值，只能读显示字符串或跳过；提醒先判 StorageType 再分支处理。",
+      "notes": "边界情形：None 存储类型"
+    }
+  ]
+}

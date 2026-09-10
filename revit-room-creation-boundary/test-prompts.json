@@ -1,0 +1,69 @@
+{
+  "skill": "revit-room-creation-boundary",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我用 NewRoom 建了房间，但看模型里好像没落地，是不是还要再放到什么平面环上？",
+      "expected_behavior": "解释两段式创建：NewRoom(phase) 创建的是与位置无关、只进明细表的房间；要用 NewRoom(room, planCircuit) 放置到平面环上才算落地，或直接用 NewRoom(level, UV) 按位置创建。",
+      "notes": "正面场景：房间未放置的困惑（A2 场景 1）。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我在事务里刚新建了一堵墙，马上读房间的 GetBoundarySegments，拿到的还是旧边界，为什么？",
+      "expected_behavior": "识别为更新时序问题：边界是文档状态的派生数据，须在事务提交或 Regenerate 之后再调用 GetBoundarySegments 才能反映新墙。",
+      "notes": "正面场景：边界不更新（A2 场景 3）。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "边界段数量和我数出来的墙数对不上，T 形相接的那面墙好像被算成了两段，是代码 bug 吗？",
+      "expected_behavior": "识别 T 形分支墙场景：GetBoundarySegments 把底墙识别为两面墙而 PlanCircuit.SideNum 视为一面，两套计数口径本就不同；同时核对 WALL_ATTR_ROOM_BOUNDING 与分隔线类别条件后下结论。",
+      "notes": "正面场景：计数口径陷阱（A2 场景 3）。"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "想按阶段批量创建房间再放到各自的平面环上，整个流程的事务怎么排？",
+      "expected_behavior": "给出按 Phase 创建房间再经 PlanCircuit 批量放置的流程编排，注意边界来源条件（墙的房间边界属性、面积分隔线类别）与更新时序。",
+      "notes": "正面场景：按 Phase/平面环批量放置（A2 场景 4）。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "做消防疏散分析，需要知道每扇门两侧各是哪个房间、哪些房间互相连通。",
+      "expected_behavior": "不应调用本 skill，理由：这是门窗与房间的归属判断（ToRoom/FromRoom 双向属性），属于 revit-to-from-room-semantics；本 skill 管房间自身的创建与边界。",
+      "notes": "跨 skill 混淆诱饵：房间归属 vs 房间创建。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "房间的面积能正常读出来，Volume 却一直是 0，这是什么毛病？",
+      "expected_behavior": "不应调用本 skill，理由：体积返回 0 是文档级体积计算开关未启用的问题，属于 revit-room-volume-enable；本 skill 处理平面创建与边界。",
+      "notes": "跨 skill 混淆诱饵：三维体积开关 vs 平面创建边界。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "帮我写个脚本批量重命名项目浏览器里的视图。",
+      "expected_behavior": "不应调用本 skill，理由：视图重命名与房间创建/边界无关。",
+      "notes": "完全无关的通用请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我在房间旁边画了模型线，为什么它不参与房间边界？",
+      "expected_behavior": "边界来源条件判定：模型线类别必须是 OST_AreaSeparationLines（面积分隔线）才算边界线，普通模型线不算；agent 应说明该条件并引导检查线类别。",
+      "notes": "边界场景：边界线来源类别条件。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "改墙和读边界能不能放在同一个事务里完成？",
+      "expected_behavior": "不能读到新边界：同一事务内改墙后立即读 GetBoundarySegments 得到的是旧数据，正确顺序是提交事务（或 Regenerate）后再读。agent 应明确给出\"更新→检索\"的顺序边界。",
+      "notes": "边界场景：事务内外读取时序。"
+    }
+  ]
+}

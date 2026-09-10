@@ -1,0 +1,62 @@
+{
+  "skill": "revit-geometry-options-visibility",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "提取出来的几何里死活找不到中心平面和风管保温层，是遍历逻辑漏了吗？",
+      "expected_behavior": "核对 Options 四属性：IncludeNonVisibleObjects 默认 false 会排除条件几何（中心平面、隔热层），设为 true 后几何即返回。",
+      "notes": "正面场景：条件几何被可见性过滤。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "梁和楼梯提取出来的几何特别粗，只有个大概轮廓，算量结果对不上。",
+      "expected_behavior": "定位为 DetailLevel 默认 Medium 导致粗略几何，显式设为 Fine 后得到精确几何。",
+      "notes": "正面场景：详细程度不足。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "ComputeReferences 这个开关要不要默认打开？开了对性能有什么影响？",
+      "expected_behavior": "说明 ComputeReferences 默认 false、是重开关，只有需要拿几何去创建其他图元（尺寸、基于面的族）时才开 true，默认开会显著拖慢大规模遍历。",
+      "notes": "正面场景：重开关的性能权衡。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我要的是梁在被连接切割之前的净几何，从哪个入口拿？",
+      "expected_behavior": "不应调用本 skill，理由：这是原始几何入口选择问题（GetOriginalGeometry），Options 只是辅助，应激活几何提取流程 skill。",
+      "notes": "混淆诱饵：Options 调参 vs 入口选择。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "从 Element 到 Solid 的遍历代码整体应该怎么组织？",
+      "expected_behavior": "不应调用本 skill，理由：这是几何提取主干流程问题，本 skill 只管 Options 参数导致的缺几何/精度故障，应激活几何提取 skill。",
+      "notes": "混淆诱饵：主干流程 vs 参数故障排查。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "怎么给自己注册一个短域名？",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 开发完全无关的网络服务请求。",
+      "notes": "完全无关请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我明明设了 DetailLevel 是 Fine，怎么提取出来的几何还是粗的？",
+      "expected_behavior": "边界判别：Options 指定了 View 后会覆盖 DetailLevel 设置，两者同时设置以 View 为准；检查是否误设了 View，去掉 View 或按视图详细程度调整。",
+      "notes": "边界场景：View 覆盖 DetailLevel 的优先级陷阱。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "取到的几何类型和位置完全不对，调 Options 有救吗？",
+      "expected_behavior": "边界判别：几何完全不对是遍历流程或坐标系问题，不属于 Options 语义范畴，调参无效；应排查提取流程与变换，而非继续调 Options。",
+      "notes": "边界场景：Options 能修的与不能修的。"
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "skill": "revit-familymanager-type-parameter",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "给族加一个'宽度'参数，用 FamilyManager 的哪个方法？",
+      "expected_behavior": "激活后应指导用 FamilyManager.AddParameter 创建族参数，可与尺寸标注 Label 绑定实现参数驱动。",
+      "notes": "正面场景：族参数添加"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "想让族的面积参数等于长乘宽自动算出来，公式怎么设？",
+      "expected_behavior": "激活后应给出 SetFormula(param, formulaString) 用公式驱动参数值的方法。",
+      "notes": "正面场景：公式驱动参数"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "给族批量新增几个类型并各自设参数值，Set 之前要注意什么？",
+      "expected_behavior": "激活后应强调类型值须在当前类型上下文设置：先确保 CurrentType 是目标类型再 Set，NewType 创建后自动成为当前类型。",
+      "notes": "正面场景：NewType + Set 时序"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "想让族参数带 GUID 全局唯一、明细表能统计，普通 AddParameter 行吗？",
+      "expected_behavior": "激活后应说明共享参数走带 SharedParameterDefinition/GUID 的 AddParameter 重载，与普通参数不同。",
+      "notes": "正面场景：共享参数进族"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "在项目文档里给一批图元挂共享参数并绑定到类别，用哪个 API？",
+      "expected_behavior": "不应调用本 skill，理由：项目文档的项目参数/共享参数绑定体系与 FamilyManager 是两套体系，属于项目参数绑定类 skill 的触发面，FamilyManager 仅族文档可用。",
+      "notes": "跨 skill 混淆诱饵：项目参数体系 vs 族参数管理"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "帮我写一段生成随机密码的脚本",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 无关的通用脚本请求。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "族文档里改了类型值，项目里已经放置的实例怎么没跟着变？",
+      "expected_behavior": "激活后应说明生效时序：族文档改动需 LoadFamily 回载，且已有实例需显式改 FamilyInstance.Symbol 切换到新类型——回载+换型缺一不可；这处于本 skill 与 revit-family-document-edit-paths 的交界，但'改了类型实例不变'是本 skill 明确覆盖的铁律。",
+      "notes": "边界：回载+换型闭环（与 edit-paths 交界）"
+    }
+  ]
+}

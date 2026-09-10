@@ -1,0 +1,62 @@
+{
+  "skill": "revit-indexed-property-get-set",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我照着书上的例子抄了 Element.Geometry(options)，结果编译报 CS1061 说不包含该定义，书上写错了还是我抄错了？",
+      "expected_behavior": "识别为索引型属性误按普通属性访问：带参数的成员须写成 get_Geometry(options) 方法调用，改写后核对参数类型（Options 需实例化）即可编译通过。",
+      "notes": "正面场景：照书/文档抄代码在属性名+括号处编译失败。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "看同事的代码里有 elem.get_Parameter(BuiltInParameter.WALL_BASE_OFFSET)，方法名前面挂个 get_ 是不是他自己起错了名？",
+      "expected_behavior": "解释 get_/set_ 前缀是 Revit 索引型成员的固定调用约定而非笔误，get_Parameter(BuiltInParameter) 正是参数检索中最高频的例子。",
+      "notes": "正面场景：看到 get_ 前缀方法名怀疑是笔误。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我是写 Java 转过来的，Revit API 里那种带参数的属性在 C# 里到底怎么访问？括号传参的那种。",
+      "expected_behavior": "讲解索引型属性与 C# 属性语法的差异：凡文档标注 Indexed/Overload 且调用需传参的成员一律按 get_XXX(参数)/set_XXX(参数) 方法调用，并给出识别规则。",
+      "notes": "正面场景：从 C#/Java 背景转来需要转换访问语法思维。"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "IDE 智能提示里 get_Geometry 和 Geometry 都能搜到，到底该用哪一个？我之前把前缀删了又编译不过。",
+      "expected_behavior": "确认带 Options 参数的几何访问必须用 get_Geometry(options)，提醒不要因前缀看起来怪而删掉，并建议用智能提示核对 get_XXX 条目的参数列表。",
+      "notes": "正面场景：智能提示里两个名字并存导致犹豫删前缀。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "API 读出来的墙长度是 9.5，实际画的是 2.9 米左右，这个取回来的数值是不是要做单位换算？",
+      "expected_behavior": "不应调用本 skill，理由：问题是被取回数值的单位语义（内部英尺 vs 毫米），应触发 revit-internal-units-conversion；本 skill 只管怎么调用（语法形状），不管取回值是什么单位。",
+      "notes": "跨 skill 混淆诱饵：邻居 revit-internal-units-conversion 的触发面（读数不对劲做单位转换）。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "推荐几本适合零基础学 C# 的书。",
+      "expected_behavior": "不应调用本 skill，理由：学习资源推荐请求，与 Revit API 语法约定无关。",
+      "notes": "完全无关的通用请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我的代码编译早就过了，get_Parameter 用得也对，但运行时它给我返回 null，这是为什么？",
+      "expected_behavior": "不应调用本 skill，理由：语法层（前缀写法）已正确，返回 null 属于查找语义问题（目标图元上不存在该 BuiltInParameter 或应改用 LookupParameter 按名查找），应转向参数检索语义专题。",
+      "notes": "边界场景：语法正确但运行结果异常，问题已越过调用形状范畴。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "element.Id 和 element.Name 我都直接访问没加前缀，能跑。是不是所有 Element 的成员我都该无脑加个 get_ 试试？",
+      "expected_behavior": "不应调用本 skill（不应引导加前缀），理由：无参数的普通属性（Id/Name）直接访问即可，加前缀反而不存在该成员；前缀约定只适用于带参数的索引型成员，需先确认成员是否带参。",
+      "notes": "边界场景：对前缀规则的过度泛化，考察 agent 是否说出适用边界。"
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "skill": "revit-analytical-model-guard-clause",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我要写一个遍历全楼结构构件读取分析模型几何的方法，怎么保证不管遇到什么图元都不会崩？",
+      "expected_behavior": "给出原则：探测在前、取值在后——先用 IsSinglePoint/IsSingleCurve 判定形态，再分派到 GetPoint/GetCurve/GetCurves；三分支（点/单曲线/其他）封装成永不崩溃的安全读取方法。",
+      "notes": "核心场景：守卫原则与三分支封装"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "处理混合图元集合（柱、梁、支撑）时怎么设计 if 分支才能避免 InapplicableDataException？有没有推荐的判定顺序？",
+      "expected_behavior": "按 SKILL.md 给出判定顺序：先 IsSinglePoint→GetPoint，再 IsSingleCurve→GetCurve，多段用 GetCurves，剩余情况（无分析模型/形态不适用）走兜底分支返回 null 或跳过；判定基于形态属性而非图元类别。",
+      "notes": "正面场景：分支设计顺序"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "为什么官方文档建议用 IsSinglePoint/IsSingleCurve 探测而不是 try-catch？我封装通用几何读取器时应该遵循什么模式？",
+      "expected_behavior": "说明守卫子句优于异常捕获：异常是运行时崩溃级代价且掩盖逻辑错误；给出三分支封装模板（探测→分派→兜底），保证任何图元输入都不会抛 InapplicableDataException。",
+      "notes": "核心差异点：探测 vs 捕获"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我的程序已经崩了，异常堆栈指向 InapplicableDataException，帮我定位是哪一步抛出来的、为什么？",
+      "expected_behavior": "不应激活本 skill。这是异常根因诊断（反例视角），应走 revit-analytical-model-exception；本 skill 提供的是事前的守卫式写法，不做崩溃溯源分析。",
+      "notes": "跨 skill 混淆诱饵：正反互补 skill"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我想知道分析模型曲线取出来之后怎么区分 Raw/Active/Approximated 三层语义？",
+      "expected_behavior": "不应激活本 skill。三层曲线语义属于 revit-analytical-model-geometry 的触发面；本 skill 只覆盖形态探测与分支守卫，不涉及曲线分层。",
+      "notes": "跨 skill 混淆诱饵：几何分层语义"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我按 IsSinglePoint/IsSingleCurve 分了两个分支，但还有些图元两个都返回 false，这些图元该走哪条路径？直接跳过吗？",
+      "expected_behavior": "说明第三分支的职责：两个探测都为 false 的图元（多段/无常规分析形态）应走 GetCurves 或显式跳过/记录日志，封装仍不崩；守卫设计的完整形态是三分支而非两分支。",
+      "notes": "边界：两分支覆盖不全的模糊地带"
+    }
+  ]
+}

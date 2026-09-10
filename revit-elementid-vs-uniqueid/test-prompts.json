@@ -1,0 +1,62 @@
+{
+  "skill": "revit-elementid-vs-uniqueid",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我设计一个 BIM 数据管道，要把图元标识导出到外部数据库，字段该用 ElementId 还是 UniqueId？两者到底有什么区别？",
+      "expected_behavior": "给出决策口诀：数据要持久化/跨文件 → UniqueId，只在本次运行内用 → ElementId；ElementId 是整数、只在当前项目内唯一、进程内 API 调用（移动/删除/过滤/IdSet 构造）速度最快；UniqueId 是 GUID 字符串、与 ElementId 一一对应、跨项目全局唯一，任何要\"离开当前 Revit 会话\"的引用（外部数据库、BIM 平台、模型对比、IFC 跟踪）都应存它。",
+      "notes": "正面场景：外部持久化字段选型（正文版完整框架）"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "两个 ElementId 明明整数值一样，我用 Object.Equals 比较却返回不相等，这是什么原因？正确的比较方式是什么？",
+      "expected_behavior": "指出 ElementId 比较不要用 Object.Equals（引用语义陷阱），应比较 IntegerValue；这是正文版给出的工程细节之一。",
+      "notes": "正面场景：ElementId 相等性比较陷阱"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "模型要经 IFC 导出再导入做交换，导出前记录的图元 ID 在往返之后还能对上吗？该记录哪个 ID？",
+      "expected_behavior": "指出 IFC 导出再导入可能分配新的 ElementId，跨格式往返跟踪一律用 UniqueId（GUID），导出/交换场景用 GUID 仍可对上对象。",
+      "notes": "正面场景：IFC 跟踪选 GUID"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "我写了个模型对比工具，要在两个版本的文件之间对上同一个图元，用 ElementId 做匹配键安全吗？",
+      "expected_behavior": "说明换一个项目、IFC 导出再导入、工作共享同步等场景下 ElementId 不保证不变或不撞号，做跨文件图元匹配应存 UniqueId；同时提醒复制图元时 UniqueId 必然变化（新对象的合法标识）、ElementId 不一定变。",
+      "notes": "正面场景：跨文件模型对比键选型"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "工作共享模型每次与中心同步后我记录的 ElementId 就失配，更新器里也想知道该用哪个 ID，这两条规则书上哪里讲得最细？",
+      "expected_behavior": "不应激活本 skill 作为主答。工作共享同步 ID 漂移、复制稳定性与\"更新器管理建议用 UniqueId\"是附录术语版的增量证据，应走 revit-id-vs-uid-decision（附录速查版）；本 skill 是正文完整版，虽同源但更新器专题与同步漂移细节以附录版补充为准，两者互为对照。",
+      "notes": "跨 skill 混淆诱饵：同源附录术语版"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我手里有一个 ElementId，想高效地把对应的 Element 对象拿回来，用哪个 API？",
+      "expected_behavior": "不应激活本 skill。按已知 ID 检索对象属于\"检索四法\"的入口选择，应走 revit-element-retrieval-four-entries：已知单个图元用 GetElement，ElementId 是其直接参数。本 skill 回答\"标识本身选哪个、怎么比\"，不回答检索入口。",
+      "notes": "跨 skill 混淆诱饵：检索四法 vs 双 ID 语义"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我发现数据库里已经存了一批 ElementId 的老代码，现在要改成 UniqueId，怎么迁移才不丢数据？",
+      "expected_behavior": "按执行步骤处理：若发现已存在用 ElementId 的外部存储 → 标记为缺陷，建议迁移 UniqueId 并保留映射表；迁移时用存量 ElementId 回查图元读出 UniqueId 写入，映射表做过渡兼容。",
+      "notes": "边界情形：存量 ElementId 存储的缺陷迁移"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "复制图元之后新图元的 UniqueId 变了，是不是说明 UniqueId 不稳定、不适合当全局标识用？",
+      "expected_behavior": "纠正误读：\"UniqueId 全局唯一\"不等于\"内容不变\"——复制产生新对象时新 UniqueId 是新对象的合法标识，它标的是对象身份而不是几何内容哈希；跨项目撞号、同步后变化、IFC 往返对不上这些才是 ElementId 当全局标识用的真实失败模式。",
+      "notes": "边界情形：复制后 UID 变化的语义误读"
+    }
+  ]
+}

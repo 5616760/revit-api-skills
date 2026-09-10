@@ -1,0 +1,62 @@
+{
+  "skill": "revit-new-opening-overloads",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "要在结构梁腹板上开个洞穿管道，NewOpening 该怎么调？",
+      "expected_behavior": "识别主体为族实例，用 NewOpening(Element, CurveArray, eRefFace) 重载，第三个参数指定洞口开在主体的哪个参照面上，弧形参照面也可以。",
+      "notes": "正面场景：族实例上开洞。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "在墙上开一个矩形洞口，两个坐标点怎么传？",
+      "expected_behavior": "选 NewOpening(Wall, XYZ, XYZ) 两点矩形重载，两个点必须构成矩形的角点（如左下角加右上角）。",
+      "notes": "正面场景：墙洞口两点矩形。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "要创建一个贯穿几层的竖井洞口，是不是要传两个标高？",
+      "expected_behavior": "选竖井双标重重载（topLevel 与 bottomLevel 界定竖向范围），调用前校验 topLevel 高于 bottomLevel。",
+      "notes": "正面场景：竖井洞口创建。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "读出已有洞口的边界曲线做复核，IsRectBoundary 是干什么的？",
+      "expected_behavior": "不应调用本 skill，理由：这是洞口边界读取问题，应激活洞口边界读取 skill；本 skill 管创建的重载选型。",
+      "notes": "混淆诱饵：创建 vs 读取。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "创建洞口的时候抛异常了，帮我排查参数哪里不合法。",
+      "expected_behavior": "不应调用本 skill，理由：这是 NewOpening 参数约束与异常条件排查问题（标高序、矩形角点），应激活洞口约束 skill；本 skill 只管重载选型。",
+      "notes": "混淆诱饵：重载选型 vs 约束验证。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "Docker 容器里怎么进入命令行调试？",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 开发完全无关的容器运维问题。",
+      "notes": "完全无关请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "想在弧形墙上开个圆洞，用哪个重载能实现？",
+      "expected_behavior": "边界判别：墙上只支持矩形洞口是跨 API 的能力边界，不是第五个重载；非矩形洞口需求应判停并改走编辑墙轮廓路径，调参数绕不过去。",
+      "notes": "边界场景：能力边界 vs 参数问题。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "族实例开洞时 eRefFace 传的是图元的表面吗？",
+      "expected_behavior": "边界判别：eRefFace 是几何参照（Reference 概念）不是图元表面概念；洞口位置由参照面参数显式控制，传错参照面洞会开错位置而非报错。",
+      "notes": "边界场景：几何参照与图元表面的概念区分。"
+    }
+  ]
+}

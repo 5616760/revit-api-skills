@@ -1,0 +1,69 @@
+{
+  "skill": "revit-failures-accessor",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "自动处理故障的时候，怎么把当前事务里的故障消息都读出来判断哪些能删哪些要解决？",
+      "expected_behavior": "激活后应介绍 FailuresAccessor.GetFailuresMessages 遍历故障消息，按类型分流 DeleteWarning 或 ResolveFailure。",
+      "notes": "A2 场景 1，accessor 方法族本体"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "几十条一模一样的警告在刷屏，能不能压缩成一条再报？",
+      "expected_behavior": "激活后应给出 ReplaceFailures 用一条汇总故障替换多条相似警告的做法。",
+      "notes": "A2 场景 2"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "ResolveFailure 具体怎么用？是不是得先有解决方案才能调？",
+      "expected_behavior": "激活后应说明 ResolveFailure 标记故障已解决且需配合 FailureResolution，与 DeleteWarning 的抹除语义区分开。",
+      "notes": "A2 语言信号"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "事务已经回滚了，我这时候返回 ProceedWithCommit 还能把它提交回去吗？",
+      "expected_behavior": "激活后应警告回滚后请求 Commit 会被降级为 RollBack，结果码与实际状态不一致，并说明无解决方案的 Commit 会无限循环。",
+      "notes": "A2 场景 4 + 两大陷阱"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我在做整体架构设计：自动故障处理到底该在哪一步介入，预处理器、事件、处理器怎么选？",
+      "expected_behavior": "不应调用本 skill，理由：这是三步流水线的框架选型问题（revit-failures-processing-steps），本 skill 只回答每一步里用什么 accessor 工具。",
+      "notes": "跨 skill 混淆诱饵：工具 vs 框架"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "怎么在 OnStartup 里注册一个自定义的故障定义然后发布出去？",
+      "expected_behavior": "不应调用本 skill，理由：故障的定义注册与发布属于 revit-failure-definition-registration，本 skill 处理的是已发生故障的处置。",
+      "notes": "混淆诱饵：注册发布 vs 处置"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "Photoshop 导出的 PNG 比原图大很多，怎么压缩？",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 无关的图片处理问题。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我只想把故障列出来展示给用户看看，不打算做任何处置。",
+      "expected_behavior": "不应调用本 skill 的处置流程，理由：纯读取展示用 GetFailuresMessages 即可，不需要 DeleteWarning/ResolveFailure 等多余处置动作。",
+      "notes": "边界：只读展示不做处置"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "直接 DeleteAllWarnings 把所有警告一口气删掉最省事吧？",
+      "expected_behavior": "应激活本 skill 但给出警示：DeleteAllWarnings 可能误删重要警告，需判断哪些是噪音别一刀切；若用户不干预故障处理则不需要 accessor。",
+      "notes": "边界：一刀切删警告的风险"
+    }
+  ]
+}

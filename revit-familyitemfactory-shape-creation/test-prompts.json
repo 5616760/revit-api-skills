@@ -1,0 +1,55 @@
+{
+  "skill": "revit-familyitemfactory-shape-creation",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "在族文件里写代码创建一个拉伸体，NewExtrusion 的轮廓参数要传什么类型？",
+      "expected_behavior": "激活后应说明轮廓参数是 CurveArrArray（数组套数组，内层闭合环），必须在事务中创建且轮廓闭合。",
+      "notes": "正面场景：族内拉伸创建"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "在项目文档里调 document.FamilyCreate 直接报错了，是不是我对象拿错了？",
+      "expected_behavior": "激活后应解释 FamilyItemFactory 经 FamilyCreate 仅族文档可用（IsFamilyDocument==true），项目文档走 document.Create——同源 ItemFactoryBase 按文档类型分工。",
+      "notes": "正面场景：FamilyCreate 报错诊断"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "族里做放样体，NewSweep 的轮廓怎么组织？跟项目里建图元是一套创建 API 吗？",
+      "expected_behavior": "激活后应说明族工厂的 NewSweep 用法与'项目工厂 Create / 族工厂 FamilyCreate 两套工厂'的分工体系。",
+      "notes": "正面场景：族内放样"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "在体量环境里做放样融合形状，是不是也调 NewSweep 那个方法？",
+      "expected_behavior": "不应调用本 skill，理由：概念设计/体量环境所有形状统一用 Form 类（NewLoftForm 等 New*Forms 系列），属于 revit-conceptual-forms-type-selection 的触发面，两套类体系不能混用。",
+      "notes": "跨 skill 混淆诱饵：体量 Form 类 vs 族工厂具体类"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "帮我写一个倒计时秒表的小工具",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 无关的通用编程请求。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "概念设计里创建参照点和点曲线，也是走 FamilyCreate 吗？还是另有入口？",
+      "expected_behavior": "激活后应说明这是边界内知识：概念设计语境大规模复用同一工厂，NewReferencePoint/NewCurveByPoints 等也经 document.FamilyCreate——FamilyItemFactory 不只管'族'，概念设计也是它的地盘。",
+      "notes": "边界：概念设计复用族工厂（本 skill 覆盖）"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "创建拉伸传了几条首尾不闭合的线，创建失败，是我的曲线画错了还是 API 用错了？",
+      "expected_behavior": "激活后应判定这是轮廓数据问题而非 API 选择问题：族草图体系要求闭合轮廓，传不闭合的线创建失败是预期行为，先修数据再怀疑 API。",
+      "notes": "边界：数据错误 vs API 用法错误"
+    }
+  ]
+}

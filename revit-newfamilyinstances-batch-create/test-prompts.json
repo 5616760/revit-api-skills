@@ -1,0 +1,55 @@
+{
+  "skill": "revit-newfamilyinstances-batch-create",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "要在模型里一次放 1000 根同类型柱子，循环里逐个建太慢了，怎么提速？",
+      "expected_behavior": "激活后应给批量通道：先加载符号，构造 1000 个 FamilyInstanceCreationData 收进集合，一次 NewFamilyInstances 调用创建全部。",
+      "notes": "正面场景：大批量同型实例"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "NewFamilyInstance 和 NewFamilyInstances 什么时候用哪个？",
+      "expected_behavior": "激活后应说明选择标准：同类型多位置实例用复数形 NewFamilyInstances 一次处理集合，减少事务内多次调用开销。",
+      "notes": "正面场景：单复数 API 选择"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "写座位排布工具，几百个座椅各自位置标高还不一样，批量接口能配不同参数吗？",
+      "expected_behavior": "激活后应确认 FamilyInstanceCreationData 把每个实例的位置/符号/标高等参数打包，支持逐实例差异配置后一次创建。",
+      "notes": "正面场景：批量+逐实例参数"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "就放一扇门，NewFamilyInstance 一堆重载看得眼花，带墙的那种怎么选？",
+      "expected_behavior": "不应调用本 skill，理由：单个实例的 12 个重载按五维（host/Level/Face/线性/View）选择属于 revit-newfamilyinstance-overload-decision 的触发面，本 skill 只管批量创建通道。",
+      "notes": "跨 skill 混淆诱饵：单实例重载 vs 批量通道"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "帮我把这张图片的背景抠掉",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 无关的图像处理请求。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "想批量放置一堆门窗标记，是不是也塞进 NewFamilyInstances 一次建？",
+      "expected_behavior": "不应调用本 skill（批量通道不适用），理由：Tags 等特殊类别有专用创建方法（NewTag），不能塞进批量族实例接口——属本 skill 明确记录的例外规则边界，应提示专用通道。",
+      "notes": "边界：特殊类别专用通道例外"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "只放三五个构件也值得用批量接口吗？",
+      "expected_behavior": "激活后应给出边界判断：实例数量少时逐个 NewFamilyInstance 更直接，批量通道的收益（减少事务内多次调用开销）在小数量场景不显著——数量阈值是本 skill 的适用边界知识。",
+      "notes": "边界：小数量场景不适用"
+    }
+  ]
+}

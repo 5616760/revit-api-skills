@@ -1,0 +1,62 @@
+{
+  "skill": "revit-command-app-loading-timing",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我写了个 IExternalCommand 想让插件在 Revit 启动时自动弹窗检查模型，但命令根本不触发，为什么？",
+      "expected_behavior": "指出入口错配：IExternalCommand 是空闲时由用户点击按钮才被实例化并调用 Execute、执行完即销毁的\"被动一次性调用\"，没有\"启动时刻\"；启动时要做的事（订阅文档事件、初始化缓存）只能放 IExternalApplication 的 OnStartup——Revit 启动时自动调用、关闭时调 OnShutdown、整个生命周期驻留。",
+      "notes": "正面场景：命令里做启动初始化永远不触发"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我的插件要让功能区面板随 Revit 启动自动出现，建 Ribbon 面板的代码该放在 Command 的 Execute 里还是哪里？",
+      "expected_behavior": "UI 定制（建 Ribbon 面板）只能在启动时刻进行：改用 IExternalApplication，在 OnStartup 中创建面板；OnStartup 参数是 UIControlledApplication（启动阶段专用），面板随 Revit 启动自动加载。",
+      "notes": "正面场景：Ribbon 面板创建时机"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "OnStartup 和 OnShutdown 到底什么时候被调用？是每次打开文档都调一次，还是整个 Revit 进程只调一次？",
+      "expected_behavior": "澄清时序：OnStartup 只在 Revit 进程启动时调用一次、OnShutdown 关闭时一次，IExternalApplication 全程驻留；\"Revit 启动时调用 Application\"不等于\"每个文档打开都调用\"——文档级事件（如 DocumentOpened）是另一回事；命令则在用户点击时才 Execute，返回即销毁。",
+      "notes": "正面场景：OnStartup 调用时机的澄清"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "我要设计一个混合插件：启动时订阅事件、按钮触发具体操作，命令和应用的职责怎么划分？",
+      "expected_behavior": "给出搭档关系：Application 负责\"起床后的准备\"（OnStartup 订阅事件、建 Ribbon 按钮、初始化缓存），Command 负责\"用户来时的服务\"（Execute 执行一次性动作）；成熟插件通常是 Application 注册按钮 + Command 执行动作 + Application 挂事件。",
+      "notes": "正面场景：混合插件的职责划分"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我的命令第一次运行设置的字段值，第二次运行就丢了，命令之间的状态该存到哪里？",
+      "expected_behavior": "不应激活本 skill 作为主答。命令对象 Execute 返回即销毁导致字段无法持久化、状态存储方案选择应走 revit-command-state-persistence：跟文档走→共享参数/Extensible Storage，会话级→IExternalApplication 静态字段，重数据→外部文件/数据库。本 skill 讲加载时机对比，虽与 Application 驻留互补但不回答存储选型。",
+      "notes": "跨 skill 混淆诱饵：状态持久化 vs 加载时机"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我要写一个无 UI 的后台服务，文档打开时自动检查数据并挂更新器，IExternalApplication 和 IExternalDBApplication 选哪个？",
+      "expected_behavior": "不应激活本 skill。无 UI 后台服务属于第三类入口，应走 revit-db-application-scenarios 的 IExternalDBApplication；本 skill 对比的是 UI 侧两种入口（Command vs Application），DBApplication 明确不在范畴内。",
+      "notes": "跨 skill 混淆诱饵：DBApplication 无 UI 场景"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "Revit 启动时没打开任何项目，我的 OnStartup 里访问活动文档，是不是会出问题？",
+      "expected_behavior": "指出书中盲点：书未讨论\"零文档启动\"——实际开发中需处理活动文档为 null 的情况；OnStartup 在进程启动时执行一次，此时可能没有活动文档，初始化逻辑不应依赖 uidoc.Document 存在；文档就绪后的动作应挂 DocumentOpened 等文档级事件。",
+      "notes": "边界情形：零文档启动的活动文档为 null"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我在 OnStartup 里拿到的是 UIControlledApplication，但命令里用 UIApplication，这两个是不是一回事，能互相转吗？",
+      "expected_behavior": "区分两者：UIApplication 是命令执行时上下文（只能被正在运行命令的程序持有），UIControlledApplication 是 OnStartup 参数（启动阶段专用），两者是不同阶段的不同对象不可互换；这解释了为什么启动阶段和命令阶段能调的 API 集合不同。",
+      "notes": "边界情形：UIApplication vs UIControlledApplication"
+    }
+  ]
+}

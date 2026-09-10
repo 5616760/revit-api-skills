@@ -1,0 +1,69 @@
+{
+  "skill": "revit-selection-pickobject-filter",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我的命令要处理用户点选的对象，程序里怎么拿到用户当前在界面上已经选好的那些图元？",
+      "expected_behavior": "激活后按查询模式读 UIDocument.Selection.Elements，直接获取当前选集，不重复要求用户再选。",
+      "notes": "A2 场景1：'对用户选的对象做 XX'的命令语义。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "运行时提示用户在模型里挑一个面，但是只能允许他点到平面，圆柱面曲面那些一律选不中，要怎么限制？",
+      "expected_behavior": "激活后走过滤模式：实现 ISelectionFilter，在 AllowReference 里用 GetGeometryObjectFromReference(ref) as PlanarFace 做几何类型判断，把过滤器传给 PickObjects(ObjectType.Face, prompt, filter)，让不可选对象根本点不中。",
+      "notes": "A2 场景2：限定可选范围（只选平面）。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我要让用户一次性点选好几根梁再统一处理，选完还能给个提示语告诉他该选什么，用哪个 API？",
+      "expected_behavior": "激活后走拾取模式：PickObjects（多选）带提示语参数，返回 Reference 后用 doc.GetElement(reference) 解析为图元。",
+      "notes": "A2 场景1 变体：程序主动提示用户多选。"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "想让用户在屏幕上拉一个框圈出一片区域，然后我程序处理框里的图元，框这个动作用什么 API？",
+      "expected_behavior": "激活后选 PickBox（返回 PickedBox），说明后续可转 Outline 接空间过滤（bbox 细节交下游 skill）。",
+      "notes": "A2 场景4：框选区域批量处理。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "程序自动把模型里所有的梁都找出来批量编号，不要让用户一个个点，太累了。",
+      "expected_behavior": "不应调用本 skill，理由：对象由程序按条件自动确定，应走 FilteredElementCollector 过滤路径，应触发 revit-filtered-collector-three-steps。",
+      "notes": "跨 skill 混淆诱饵：C 组邻居 revit-filtered-collector-three-steps 的触发面（程序自动过滤 vs 用户交互拾取，B 段明确排除项）。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "用户框选完了，现在拿到框了，怎么用过滤器把框里面的墙都筛出来？",
+      "expected_behavior": "不应调用本 skill，理由：交互取框已完成，讨论的是把框转 Outline 做空间过滤，应触发 revit-boundingbox-filter-tradeoffs。",
+      "notes": "跨 skill 混淆诱饵：C 组邻居 revit-boundingbox-filter-tradeoffs 的触发面（拿到框之后怎么过滤）。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "帮我把这个文件夹里的照片按拍摄日期重命名，格式是 YYYYMMDD_序号.jpg。",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 完全无关的文件处理请求。",
+      "notes": "完全无关的通用请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我写的是一个后台批处理程序，没有界面，但我也想'让用户指定'要处理的图元，PickObject 能用吗？",
+      "expected_behavior": "不应调用本 skill 走交互路径，理由：拾取类 API 必须在 UI 上下文（UIDocument）中使用，无 UI 环境下不可用（本 skill B 段明确排除项）；应改设计为预设条件过滤或配置文件输入，层级判断细节见 revit-document-vs-uidocument。",
+      "notes": "边界场景：无 UI 语境下的交互需求不成立，考验对'拾取必须 UI 上下文'约束的把握。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我让用户选了几个对象，选完发现有的选错了，现在是在结果里逐个校验剔除，还是应该在选择时就限制住？",
+      "expected_behavior": "应激活本 skill 并按书中的失败模式纠正：过滤逻辑应放在 ISelectionFilter（AllowElement/AllowReference）里让不可选对象根本点不中，而不是放在拾取后的结果校验里让用户反复重选。",
+      "notes": "边界场景：'事后校验 vs 事前限制'的取舍，正是本 skill 警告的反模式。"
+    }
+  ]
+}

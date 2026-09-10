@@ -1,0 +1,55 @@
+{
+  "skill": "revit-instance-host-subcomponent-navigation",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "选中的是门实例，我想在代码里拿到它所在的那面墙改墙厚",
+      "expected_behavior": "激活后应指导用 FamilyInstance.Host 属性返回主体图元（门→墙），再对墙做参数操作。",
+      "notes": "正面场景：门找宿主墙"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "一个带椅子的餐桌嵌套族，怎么把里面的每把椅子都枚举出来统计？",
+      "expected_behavior": "激活后应给出递归展开方案：对根实例反复 GetSubComponentIds → GetElement → 转 FamilyInstance，直到叶子；父方向用 SuperComponent 回溯。",
+      "notes": "正面场景：嵌套族递归展开"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "遍历图元时很多实例的 Host 读出来是 null，这是 bug 还是正常情况？",
+      "expected_behavior": "激活后应解释无主体实例（桌子、落地家具、独立基础）Host 返回 null 是合法语义约定，导航代码必须容忍 null。",
+      "notes": "正面场景：Host 为 null 的语义"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "HostFace 这个属性返回的是什么东西？做基于面的定位时怎么用？",
+      "expected_behavior": "激活后应说明 HostFace 返回主体表面的 Reference 参照，用于基于面的定位场景。",
+      "notes": "正面场景：宿主表面参照"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "拿到一个族实例想知道它的类型名和族名，用什么属性往上查？",
+      "expected_behavior": "不应调用本 skill，理由：实例反查族/类型走 instance.Symbol → symbol.Family 三元导航，属于 revit-family-symbol-instance-navigation 的触发面，本 skill 管宿主与嵌套关系导航。",
+      "notes": "跨 skill 混淆诱饵：三元导航 vs 宿主/嵌套导航"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "帮我分析这段销售数据做个月度报表",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 无关的数据分析请求。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "独立基础想查它落在哪块楼板上，Host 取不到值怎么办？",
+      "expected_behavior": "激活后应说明独立基础的 Host 恒为 null 属语义边界，取'自由宿主参数'需另走 INSTANCE_FREE_HOST_PARAM，不能当 bug 修。",
+      "notes": "边界：独立基础自由宿主参数"
+    }
+  ]
+}

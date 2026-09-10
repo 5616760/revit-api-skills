@@ -1,0 +1,62 @@
+{
+  "skill": "revit-material-retrieval-fallback",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我在写一个统计工具，要把每面墙实际渲染用的材质列出来，可是读参数拿到的是 InvalidElementId，是不是我代码写错了？",
+      "expected_behavior": "识别哨兵值语义：InvalidElementId 不是错误而是\"按类别设置材料\"的信号，应沿层级回退决策树解析——复合结构墙遍历 CompoundStructureLayer.MaterialId，普通图元查参数后再回退 Element.Category.Material。",
+      "notes": "正面场景：材质清单工具遇到无效 Id（A2 场景 1/3）。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "幕墙本体查不到任何材料信息，我该怎么拿到它嵌板真正用的材质？",
+      "expected_behavior": "说明幕墙自身不报告材料，转为遍历每个嵌板图元提取材料；属\"多对象实例\"场景，同一套回退逻辑复用于嵌板载体。",
+      "notes": "正面场景：幕墙嵌板材料提取（A2 场景 2）。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "复合结构墙每一层的材料在 API 里从哪读？直接 get_Parameter 能拿到吗？",
+      "expected_behavior": "指出主体对象（墙/楼板/屋顶）的材料藏在复合结构层里，应遍历 CompoundStructureLayer 读每层的 MaterialId，而不是只走参数通道。",
+      "notes": "正面场景：分层材料读取（A2 场景 2）。"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "结构梁柱这类构件的材料，有没有比翻参数集合更直接的读法？",
+      "expected_behavior": "给出特殊直通道：FamilyInstance.StructuralMaterialId 直接取结构材料，不必走参数/类别回退。",
+      "notes": "正面场景：结构构件直通道。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我要给节能报告准备一批新材料：基于\"加气混凝土\"复制一份，把热导率换掉，热工参数该怎么挂上去？",
+      "expected_behavior": "不应调用本 skill，理由：这是材料对象的创建/复制与 ThermalAsset 属性资源挂接，属于 revit-material-access-creation；本 skill 只做从图元反查实际材料，不涉及创建。",
+      "notes": "跨 skill 混淆诱饵：材料创建 vs 材料反查。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "帮我写个脚本，把当前文档里所有未使用的族类型清理掉。",
+      "expected_behavior": "不应调用本 skill，理由：族清理与图元材料解析无关，属于通用模型清理需求。",
+      "notes": "完全无关的通用请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "栏杆扶手的 Rail Structure 材料怎么读出来是空的？这个参数的 StorageType 好像还不是 ElementId。",
+      "expected_behavior": "不应强行按决策树解析，理由：Railing 的 Rail Structure 是 StorageType.None 的复合参数，无 API 路径，属于能力边界——应明确告知拿不到并建议替代途径（如人工指定），而不是硬套回退逻辑。",
+      "notes": "边界场景：承认能力边界（拿不到的材料）。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "注释类别图元的 Material 一直返回 null，这是 API 的 bug 吗？",
+      "expected_behavior": "不是 bug：非 Model 类别（注释/导入对象）的 Material 恒为 null，属设计如此的能力边界；agent 应说明此规则并引导跳过这类图元。",
+      "notes": "边界场景：非模型类别恒为 null。"
+    }
+  ]
+}

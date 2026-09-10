@@ -1,0 +1,48 @@
+{
+  "skill": "revit-command-visibility-mode",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我写了一个只在族编辑器里有意义的外部命令，怎么配置让它打开项目文档的时候按钮不显示？",
+      "expected_behavior": "激活后应指导在 .addin 文件中设置 VisibilityMode 属性（如 NotVisibleInProject），实现命令仅在族编辑器/无文档时可见的静态配置。",
+      "notes": "正面场景：按文档类型做粗粒度静态可见性控制"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "这个工具只有 MEP 专业项目里才用得上，想在插件清单里限制它只在机电规程的项目里出现",
+      "expected_behavior": "激活后应指导在 .addin 中配置 Discipline 属性为 MEP，使命令在 Architecture/Structure 项目中不可见。",
+      "notes": "正面场景：专业规程维度的可见性限制"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "VisibilityMode 有哪几个取值？AlwaysVisible 和 NotVisibleWhenNoActiveDocument 分别是什么效果",
+      "expected_behavior": "激活后应解释 VisibilityMode 四个成员（AlwaysVisible/NotVisibleInProject/NotVisibleInFamily/NotVisibleWhenNoActiveDocument）的语义与适用场景。",
+      "notes": "正面场景：概念性提问枚举语义"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我想让按钮在用户选中墙的时候才能点，没选中就灰掉",
+      "expected_behavior": "不应调用本 skill，理由：这是基于选集的动态可用性控制，属于 revit-command-availability（IExternalCommandAvailability/IsCommandAvailable）的触发面，本 skill 只管静态的文档类型/专业维度配置。",
+      "notes": "跨 skill 混淆诱饵：动态可用性 vs 静态可见性"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "帮我写一个 Python 爬虫抓取网页表格数据",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 命令可见性完全无关的通用编程请求。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "命令在没打开任何文档的时候不想让它显示，我直接在代码里判断 ActiveUIDocument == null 行不行？",
+      "expected_behavior": "不应调用本 skill（或不单独调用），理由：无活动文档时命令回调本身可能受限，声明式配置 NotVisibleWhenNoActiveDocument 是 Revit 提供的正规机制，应优先建议 .addin 配置路径而非手写判空；属于边界上'配置 vs 代码'的选择题。",
+      "notes": "边界：代码判空 vs 声明式配置"
+    }
+  ]
+}

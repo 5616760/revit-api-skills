@@ -1,0 +1,62 @@
+{
+  "skill": "revit-reference-intersector-raycast",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "测一下天窗到它正下方最近那块楼板的垂直距离，程序里怎么实现？",
+      "expected_behavior": "按三步框架执行：准备 View3D，构造 ReferenceIntersector，以天窗某点为起点垂直向下调 FindNearest(start, dir)，解析 ReferenceWithContext 取最近交点。",
+      "notes": "正面场景：垂直测距是 FindNearest 直接用例。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "从设备安装点往管线走向方向发射一条虚拟线，看看路上会被哪些构件挡住。",
+      "expected_behavior": "自定义射线方向调 Find(startPoint, rayDirection) 拿全部命中序列，逐个 GetReference() 解析，按需设 FindReferenceTarget 与过滤集。",
+      "notes": "正面场景：遮挡/穿越路径检查。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "做采光分析要追踪光线穿过的所有构件，API 有现成的办法吗？",
+      "expected_behavior": "给出 ReferenceIntersector 光线路径追踪方案：View3D 前置 + Find() 全命中（按距离排序），说明方向向量可任意不限于垂直。",
+      "notes": "正面场景：光线路径追踪。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "把这个构件所有的面和边完整遍历出来做碰撞检查。",
+      "expected_behavior": "不应调用本 skill，理由：这是几何树完整遍历需求而非单点光线投影命中查询，应激活几何提取流程 skill。",
+      "notes": "混淆诱饵：完整遍历 vs 单点投影。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "日照分析要拿外墙的外表面，不想自己遍历 Solid 判断哪个面朝外。",
+      "expected_behavior": "不应调用本 skill，理由：这是取复合主体特定面的需求，应激活几何实用工具类 skill（HostObjectUtils.GetSideFaces）。",
+      "notes": "混淆诱饵：投影命中 vs 工具类取面。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "红烧肉要怎么做才软烂入味？",
+      "expected_behavior": "不应调用本 skill，理由：与软件开发和 Revit API 完全无关的烹饪问题。",
+      "notes": "完全无关请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我想在平面图纸这种二维视图上做命中检测，这个 API 能用吗？",
+      "expected_behavior": "边界判别：ReferenceIntersector 只与三维几何相交且必须三维视图，二维检测不适用；需先确认需求是否真的只在二维平面内，否则换三维手段。",
+      "notes": "边界场景：三维硬前置。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "射线方向上有个构件在链接进来的 RVT 文件里，能被查到吗？",
+      "expected_behavior": "边界判别：链接文件几何与非活动设计选项图元不参与相交，若需检测链接内几何要走链接文档处理路径而非本 API；结果缺失不是过滤器配错。",
+      "notes": "边界场景：链接文件几何的能力边界。"
+    }
+  ]
+}

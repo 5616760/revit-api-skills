@@ -1,0 +1,55 @@
+{
+  "skill": "revit-family-document-edit-paths",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "在项目里用 EditFamily 改了族的几何，LoadFamily 也调了，怎么项目里还是老样子？",
+      "expected_behavior": "激活后应诊断闭环缺环：EditFamily 改的是副本，回载后已有实例不会自动切换新类型，需显式改 FamilyInstance.Symbol 才生效。",
+      "notes": "正面场景：项目未更新的回写闭环"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "写族库管理工具要从零新建一个 .rfa 族文件，API 入口是什么？",
+      "expected_behavior": "激活后应给出 Application.NewFamilyDocument() 新建族文件路径，新建后即处于族文档上下文。",
+      "notes": "正面场景：新建族文件"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "怎么判断手上打开的 Document 是族文件还是项目文件？",
+      "expected_behavior": "激活后应指导用 IsFamilyDocument 属性判定，族文件可直接用 Document 类修改并访问族类型参数。",
+      "notes": "正面场景：IsFamilyDocument 判定"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "EditFamily、LoadFamily、NewFamilyDocument 这三个分别什么场合用？老是搞混",
+      "expected_behavior": "激活后应给出四种路径决策表：新建用 NewFamilyDocument、直编 .rfa 先判 IsFamilyDocument、项目内改族走 EditFamily+LoadFamily 往返、从实例溯源用 OwnerFamily。",
+      "notes": "正面场景：三个入口的分工"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "想在族文档里给族加个'宽度'参数并建一个新类型，用哪个类操作？",
+      "expected_behavior": "不应调用本 skill，理由：族文档内管理类型与参数是 FamilyManager（AddParameter/NewType/Set）的职责，属于 revit-familymanager-type-parameter 的触发面，本 skill 管进入/回载路径不管族内参数管理。",
+      "notes": "跨 skill 混淆诱饵：族内参数管理 vs 文档路径"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "帮我写一个网页轮播图组件",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 无关的前端开发请求。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "想用 API 把基本墙的族文件打开改一下层结构",
+      "expected_behavior": "不应调用本 skill，理由：墙是系统族，没有族文件可编辑，EditFamily/NewFamilyDocument 路径直接短路——需先走 revit-system-vs-component-family 的判别，改层结构走复合结构/类型属性 API。",
+      "notes": "边界：系统族短路本 skill 的编辑路径"
+    }
+  ]
+}

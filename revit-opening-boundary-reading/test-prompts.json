@@ -1,0 +1,62 @@
+{
+  "skill": "revit-opening-boundary-reading",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "要读出墙上那个洞口的边界顶点，BoundaryRect 这个属性怎么用？",
+      "expected_behavior": "先读 Opening.IsRectBoundary 判别，为 true 时 BoundaryRect 返回 IList<XYZ> 顶点集合；强调先判别后读取的顺序。",
+      "notes": "正面场景：矩形洞口边界读取。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "遍历文档里所有洞口的时候，遇到竖井那个 Host 是 null 就空引用了。",
+      "expected_behavior": "说明竖井洞口（Shaft Openings）无宿主、Host 恒为 null，遍历逻辑按类别跳过或特判，不能默认每个洞口都有宿主。",
+      "notes": "正面场景：竖井洞口遍历特判。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "异形洞口想拿边界曲线，读 BoundaryRect 得到的是 null，代码哪里写错了？",
+      "expected_behavior": "非矩形洞口 IsRectBoundary 为 false，应读 BoundaryCurves 取 CurveArray；两套属性互斥，选错一套得到 null 而非异常，不是代码错误而是分支走错。",
+      "notes": "正面场景：分支选错的 null 现象。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "在梁上开一个洞，NewOpening 要传哪些参数？",
+      "expected_behavior": "不应调用本 skill，理由：这是洞口创建的重载选择问题，应激活 NewOpening 重载 skill；本 skill 只管读取已有洞口边界。",
+      "notes": "混淆诱饵：读取 vs 创建。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "把这个面的边界环一环一环拼成闭合曲线导出去。",
+      "expected_behavior": "不应调用本 skill，理由：这是通用面边界手工遍历需求（EdgeLoops），洞口边界由 API 判别属性直接给出，两者读取方式对立，应激活面边遍历 skill。",
+      "notes": "混淆诱饵：API 直接给边界 vs 手工遍历边环。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "PDF 文件太大了怎么压缩？",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 开发完全无关的文件处理请求。",
+      "notes": "完全无关请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "BoundaryRect 返回 null 是不是说明这个洞口没有边界数据？",
+      "expected_behavior": "边界判别：null 表示该分支不适用（洞口是非矩形边界），不是空数据更不是数据损坏；应读 IsRectBoundary 后走 BoundaryCurves 分支。",
+      "notes": "边界场景：null 的语义区分。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "读出边界之后想把洞口的轮廓形状改一改，怎么改？",
+      "expected_behavior": "边界判别：本 skill 只读边界；修改洞口轮廓超出其范围，且 Revit 2014 时代 Opening API 对轮廓编辑能力有限，修改需求应走其他路径并核对当前版本能力。",
+      "notes": "边界场景：只读边界 vs 修改轮廓。"
+    }
+  ]
+}

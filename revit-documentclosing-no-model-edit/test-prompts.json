@@ -1,0 +1,55 @@
+{
+  "skill": "revit-documentclosing-no-model-edit",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我在 DocumentClosing 事件回调里想把用户未保存的标注数据写回模型，直接改参数就抛异常，这个需求该怎么实现？",
+      "expected_behavior": "应指出 DocumentClosing 是只读事件，回调中任何模型修改都会被拒绝（抛异常）；正确出路按需求分流：模型修改迁移到 IUpdater（在修改事务内响应，随事务生效）；只读数据同步（导出、记录）可留在事件回调内；需要用户交互的走 ExternalEvent 排队处理。",
+      "notes": "核心场景：DocumentClosing 只读约束与修改迁移"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "文档关闭前我想阻止用户关闭（还有任务没做完），DocumentClosing 里能取消吗？怎么写？",
+      "expected_behavior": "应确认可以走取消路径：DocumentClosing 是可取消事件，回调中先判断 args.Cancellable，再设置 args.Cancel = true 阻止关闭；提醒取消会截断后续订阅者且不可逆（衔接 revit-cancelable-events-propagation 的取消纪律）。",
+      "notes": "核心场景：取消关闭事件"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我想在文档关闭前自动导出一份图元统计数据到外部文件，这个动作放在 DocumentClosing 回调里行不行？",
+      "expected_behavior": "应区分动作性质：读取图元数据、写外部文件属于只读同步操作，可以留在 DocumentClosing 回调（只读约束针对的是模型修改）；涉及修改模型对象的操作（改参数、删图元）才必须迁出。",
+      "notes": "核心场景：只读同步留在事件"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我在 DocumentSaving 回调里修改参数也被拦了，想知道一般性的判断方法：怎么在任意事件回调里检查文档当前能不能改？",
+      "expected_behavior": "不应激活本 skill。通用的事件回调可写性检查（Document.IsModifiable / IsReadOnly 及两层只读约束框架）属于 revit-readonly-event-checks。本 skill 专讲 DocumentClosing 一个事件的约束与迁移方案。",
+      "notes": "跨 skill 混淆诱饵：readonly-event-checks"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我的非模态窗体按钮要改模型，用 ExternalEvent 的完整四步实现怎么写？",
+      "expected_behavior": "不应激活本 skill。External Events 的完整实现模板（IExternalEventHandler + Create + Raise + Dispose）属于 revit-external-events-nonmodal-dialog。本 skill 只在'文档关闭场景的交互出路'上引用该机制，不展开模板。",
+      "notes": "跨 skill 混淆诱饵：external-events-nonmodal-dialog"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我在 DocumentClosing 里通过 ExternalEvent.Raise() 排队了一个修改操作，指望关闭流程中执行它，这样能成功吗？",
+      "expected_behavior": "应指出风险：关闭流程中 Revit 不保证还有机会执行排队的 Execute，文档可能已进入关闭/销毁状态；Execute 内必须做文档有效性防御（检查文档是否仍可用），且把'关闭前必须完成的修改'寄望于排队本身不可靠，更稳的做法是取消关闭、完成修改、再放行。",
+      "notes": "边界：关闭流程中 Raise 的可靠性"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "DocumentClosed 事件里我还能拿到关闭的文档对象读图元数据吗？和 DocumentClosing 里能拿到的有什么差别？",
+      "expected_behavior": "应辨析两个事件的时机差：DocumentClosing 时文档尚在（只读，可读数据、可取消关闭）；DocumentClosed 时文档已关闭，图元数据不可再访问，回调只能从事件参数中拿到文档标识类信息。因此'读数据'要在 Closing 阶段完成，'感知关闭做清理'才用 Closed。",
+      "notes": "边界：Closing 与 Closed 的时机选择"
+    }
+  ]
+}

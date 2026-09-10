@@ -1,0 +1,62 @@
+{
+  "skill": "revit-floor-foundation-creation",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "调 NewFoundationSlab 一直失败，是不是创建入口选错了？",
+      "expected_behavior": "检查 FloorType.IsFoundationSlab：NewFoundationSlab 只接受 IsFoundationSlab=true 的 FloorType，传普通楼板类型会失败；按布尔判别属性分支选入口。",
+      "notes": "正面场景：创建失败的入口判别。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "楼板和基础板在 API 上怎么区分？创建方法一样吗？",
+      "expected_behavior": "说明判别树：先读 FloorType.IsFoundationSlab，true 走 NewFoundationSlab，false 走 NewFloor/NewSlab 分支；先读属性再选方法，顺序反了调用失败。",
+      "notes": "正面场景：板类判别树。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "模型里同样是结构基础类别的图元，独立基础和基础板的创建方法能通用吗？",
+      "expected_behavior": "指出类别相同不代表类相同：楼板/基础板是系统族走 FloorType 体系，独立基础是 FamilyInstance 走 NewFamilyInstance，墙基础是 ContFooting；按对象类选入口而非 BuiltInCategory。",
+      "notes": "正面场景：类别不等于类。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "创建一段墙，面对一堆重载不知道选哪个。",
+      "expected_behavior": "不应调用本 skill，理由：这是墙的创建重载选择问题，应激活墙创建重载 skill；本 skill 管楼板/基础板的判别创建。",
+      "notes": "混淆诱饵：板判别 vs 墙重载。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "批量删完楼板以后，模型里残留的孤立基础怎么找出来清理？",
+      "expected_behavior": "不应调用本 skill，理由：这是删除后宿主-基础关系不级联的清理问题，应激活基础宿主删除 skill（INSTANCE_FREE_HOST_PARAM 判孤立）。",
+      "notes": "混淆诱饵：创建判别 vs 删除清理。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "JSON 和 XML 各适合什么场景？",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 开发完全无关的数据格式选型问题。",
+      "notes": "完全无关请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "IsFoundationSlab 是从创建出来的板实例上读，还是从类型上读？",
+      "expected_behavior": "边界判别：IsFoundationSlab 挂在 FloorType（类型级），不是实例属性；判别发生在选类型阶段，创建后验证也应回类型上核对。",
+      "notes": "边界场景：类型级 vs 实例级判别属性。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "想程序化创建墙下条形基础，跟基础板走一样的路子行不行？",
+      "expected_behavior": "边界判别：墙基础是 ContFooting 对象类，API 支持有限且是另一条特殊路径，不能套用基础板的判别流程；应先确认对象类再谈入口。",
+      "notes": "边界场景：三个基础三条路径的区分。"
+    }
+  ]
+}

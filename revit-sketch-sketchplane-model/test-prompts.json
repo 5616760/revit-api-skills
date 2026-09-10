@@ -1,0 +1,62 @@
+{
+  "skill": "revit-sketch-sketchplane-model",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "想在坡屋顶的斜面上用代码画一条模型曲线，怎么定位到那个斜平面？",
+      "expected_behavior": "按三层装配执行：Plane.Create(origin, normal) 把 Normal 指向屋顶法向，SketchPlane.Create(doc, plane)，再 NewModelCurve(curve, sketchPlane)。",
+      "notes": "正面场景：任意倾斜面绘制曲线。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "已经画好的 ModelCurve 要挪到另一个草图平面上去，能分别改 Curve 和 SketchPlane 两个属性吗？",
+      "expected_behavior": "指出单独设置两个属性会导致曲线与平面脱节、内部数据不一致，必须用 SetPlaneAndCurve() 一次性同时修改并验证位置一致。",
+      "notes": "正面场景：跨平面修改的一致性铁律。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "分析工具算出来的轮廓线想落回模型里变成可见的辅助线。",
+      "expected_behavior": "把分析结果曲线通过 NewSketchPlane + NewModelCurve 落成模型曲线，说明平面、草图平面、曲线三层装配顺序。",
+      "notes": "正面场景：分析结果落回模型。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "把一个已有面的边界曲线按顺序读出来导出。",
+      "expected_behavior": "不应调用本 skill，理由：这是读取面边界（写 vs 读的反向操作），应激活 Face 边缘遍历 skill。",
+      "notes": "混淆诱饵：把曲线画回模型 vs 从面读出曲线。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "创建一块楼板，把它的闭合轮廓曲线给定义出来。",
+      "expected_behavior": "不应调用本 skill，理由：系统族（楼板/屋顶/墙）有自己的 Create 流程，轮廓不落成独立 ModelCurve 集，应激活楼板创建相关 skill。",
+      "notes": "混淆诱饵：模型曲线绘制 vs 系统族轮廓创建。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "怎么把一段视频转成 GIF 动图？",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 开发完全无关的多媒体处理请求。",
+      "notes": "完全无关请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "用 FilteredElementCollector 遍历 Document.Elements 死活找不到 Sketch 图元，是过滤器写错了吗？",
+      "expected_behavior": "边界判别：Sketch 是瞬态图元，不能经 Document.Elements 枚举检索，这是设计使然不是过滤器问题；操作草图要按持有对象走，找不到不代表异常。",
+      "notes": "边界场景：瞬态图元枚举不到。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我想画的是图纸上那种注释详图线，也用 NewModelCurve 吗？",
+      "expected_behavior": "边界判别：详图线是注释对象，走 View + SketchPlane 的另一套创建 API，与模型线（NewModelCurve）不同类；需求需先确认是模型级还是注释级。",
+      "notes": "边界场景：详图线与模型线的分野。"
+    }
+  ]
+}

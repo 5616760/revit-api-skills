@@ -1,0 +1,62 @@
+{
+  "skill": "revit-family-instance-no-geometryinstance",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "为什么这根梁遍历出来顶层直接是 Solid，不是文档里说的 GeometryInstance？我代码写错了吗？",
+      "expected_behavior": "说明这不是 bug：局部连接/相交/实例放置触发引擎生成唯一副本，GeometryInstance 消失、Solid 浮到顶层；遍历代码须对顶层同时做类型分派。",
+      "notes": "正面场景：反直觉运行时行为排障。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我的几何提取工具在独立的梁上跑得好好的，换到一根跟柱子相连的梁就少了一部分几何，还不报错。",
+      "expected_behavior": "定位为连接/相交场景下只处理 GeometryInstance 分支导致静默丢几何，补上顶层 Solid/Curve/Mesh 的直接处理分支。",
+      "notes": "正面场景：连接构件漏几何的静默失败。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "要写一个通用的几何提取公共函数，遍历逻辑上有什么必须注意的？",
+      "expected_behavior": "对顶层每个 GeometryObject 用类型分派：GeometryInstance 递归展开，Solid/Curve/Mesh 直接处理，没有空分支；用连接梁与独立梁各验证一遍。",
+      "notes": "正面场景：通用提取函数的健壮性设计。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "把一个族实例的所有面完整遍历出来算表面积。",
+      "expected_behavior": "不应调用本 skill，理由：这是正向几何提取流程需求，本 skill 只讲其中顶层类型不唯一的反例修正；应先激活几何提取主干 skill。",
+      "notes": "混淆诱饵：主干提取流程 vs 反例修正。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "用 GetInstanceGeometry 拿的面去创建基于面的族，一直失败。",
+      "expected_behavior": "不应调用本 skill，理由：这是副本几何无有效 Reference 的副本语义问题，应激活符号几何与实例几何选择 skill。",
+      "notes": "混淆诱饵：结构消失 vs 副本参照无效。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "Windows 任务栏经常卡死无响应，有什么办法解决？",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 开发完全无关的操作系统问题。",
+      "notes": "完全无关请求。"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "顶层有时候 Solid 和 GeometryInstance 同时出现，这是不是模型出问题了？",
+      "expected_behavior": "边界判别：两类对象可以并存而非二选一，健壮的遍历必须两条分支都处理，不能只挑一种；这是正常引擎行为不是模型损坏。",
+      "notes": "边界场景：并存 vs 互斥的误解。"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "书是 Revit 2014 的，现在用新版还有这个 Solid 顶替 GeometryInstance 的行为吗？",
+      "expected_behavior": "边界判别：该行为是引擎内部决策的外显，连接/相交/放置这些触发条件在新版本仍适用，但具体边界可能随版本微调，生产代码应以实测为准并保持类型分派写法。",
+      "notes": "边界场景：版本差异下行为的可靠性。"
+    }
+  ]
+}

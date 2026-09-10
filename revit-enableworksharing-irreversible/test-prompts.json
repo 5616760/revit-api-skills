@@ -1,0 +1,55 @@
+{
+  "skill": "revit-enableworksharing-irreversible",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "插件要把单机文档升级成中心文件，第一步启用工作共享，EnableWorksharing 调用前有什么要注意的？",
+      "expected_behavior": "激活后应强调两条硬约束：调用前所有显式启动的事务/子事务/事务组必须全部完成；该操作清除撤销历史、不可逆。",
+      "notes": "A2 场景 1，本体"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我在 TransactionGroup 里调 EnableWorksharing 一直失败，是什么原因？",
+      "expected_behavior": "激活后应指出活跃事务未完成（含事务组内）时调用必失败，正确时机是所有事务 Commit 后、不在任何 TransactionGroup 内。",
+      "notes": "A2 场景 2/语言信号"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "启用工作共享之后，之前那些操作还能 Ctrl+Z 撤销回去吗？",
+      "expected_behavior": "激活后应明确撤销栈被清除，命令本身及之前所有操作都无法撤销，不存在回退路径。",
+      "notes": "A2 场景 3/语言信号"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "工作共享启用之后，插件里检出图元、放弃所有权这些操作怎么组织？",
+      "expected_behavior": "不应调用本 skill，理由：启用之后的所有权操作属于 revit-worksharing-api-decision-framework，本 skill 只管启用这一步的前置约束。",
+      "notes": "跨 skill 混淆诱饵：启用一步 vs 启用后流程"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "帮我制定一个三个月的健身减脂计划。",
+      "expected_behavior": "不应调用本 skill，理由：与 Revit API 完全无关的健身咨询。",
+      "notes": "完全无关请求"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "能不能先启用工作共享试用一下，不合适再用事务组回滚到之前的状态？",
+      "expected_behavior": "不应调用本 skill 的回滚设想，理由：启用即永久，撤销栈被清，TransactionGroup 的回滚承诺作废，不存在试用后回滚的路径。",
+      "notes": "边界：想回滚的实验流程不存在"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "文档之前已经启用过工作共享了，插件里要不要再调一次 EnableWorksharing？",
+      "expected_behavior": "不应调用本 skill 的启用流程，理由：IsWorkshared 已为 true 时无需也无法再次启用，调用前应先检查。",
+      "notes": "边界：已启用则跳过"
+    }
+  ]
+}

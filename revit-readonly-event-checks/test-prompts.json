@@ -1,0 +1,55 @@
+{
+  "skill": "revit-readonly-event-checks",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我在 DocumentSaving 事件回调里修改参数，抛异常说文档只读，怎么在回调里先判断当前能不能改模型？",
+      "expected_behavior": "应给出运行时检查两个属性：Document.IsModifiable（当前是否处于打开的可修改事务中）和 Document.IsReadOnly（文档当前是否为只读状态，如事件回调只读期、工作共享检出受限）；回调中改模型前先检查这两个标志，不满足就改走其他途径。",
+      "notes": "核心场景：IsModifiable/IsReadOnly 运行时检查"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "IsModifiable 和 IsReadOnly 这两个属性分别是什么含义？看起来都是'能不能改'，区别在哪？",
+      "expected_behavior": "应辨析：IsModifiable 表示文档当前处于已打开的事务中、允许做出修改（事务窗口状态）；IsReadOnly 表示文档整体处于只读锁定（事件回调期间、检入/检出受限等），即使有事务也不能改。二者组合描述'两层约束'：静态只读（事件类型决定）+ 动态只读（工作共享检出状态等运行时因素）。",
+      "notes": "核心场景：两属性语义辨析"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "哪些事件的回调里是绝对不能修改模型的？我想整理一份事件回调的修改安全性清单。",
+      "expected_behavior": "应给出两层约束框架：存在静态只读事件（保存/关闭类等通知期事件，回调中修改必抛异常），这类事件回调只能做只读同步；判断手段是 Document.IsReadOnly 运行时检查结合事件类型清单，而非逐个试错。",
+      "notes": "核心场景：只读事件约束"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我在 DocumentClosing 回调里要把数据写回模型被拦了，除了检查只读状态，修改需求应该迁移到哪里？",
+      "expected_behavior": "不应激活本 skill。DocumentClosing 场景的修改迁移方案（改模型迁 IUpdater、交互走 ExternalEvent）属于 revit-documentclosing-no-model-edit。本 skill 提供通用的只读检查手段，那个 skill 提供该特定事件的出路。",
+      "notes": "跨 skill 混淆诱饵：documentclosing-no-model-edit"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我的文档事件注册代码放在命令里导致重复触发，注册应该挪到哪里？",
+      "expected_behavior": "不应激活本 skill。事件注册位置与两步注册法属于 revit-event-registration-two-steps。本 skill 讲事件回调内外的可写性判断，不涉及注册管理。",
+      "notes": "跨 skill 混淆诱饵：event-registration-two-steps"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "工作共享中心模型的本地副本，我检查了 IsModifiable 是 true，修改某些图元还是失败，是检查不全面吗？",
+      "expected_behavior": "应指出动态约束层：工作共享文档中图元可能被其他用户检出（或本机未检出），IsModifiable 只反映事务窗口状态，不能反映每个图元的检出归属；只读约束是两层的（静态事件约束 + 动态检出约束），检出状态需要单独考虑，这也是用 IsReadOnly 及检出信息补充判断的原因。",
+      "notes": "边界：两层约束中的动态检出"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "在 Idling 事件回调里 IsModifiable 是什么状态？我想在 Idling 里做修改该怎么组织？",
+      "expected_behavior": "应说明 Idling 回调处于 API 上下文但默认没有打开的事务，IsModifiable 为 false；要在其中修改需自己开事务（Idling 不属于静态只读事件），开事务后 IsModifiable 变为 true。同时提醒 Idling 高频触发的性能纪律，避免每次空闲都做重活。",
+      "notes": "边界：Idling 中的事务窗口"
+    }
+  ]
+}

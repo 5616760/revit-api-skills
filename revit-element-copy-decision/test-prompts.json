@@ -1,0 +1,62 @@
+{
+  "skill": "revit-element-copy-decision",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我要在同一个文档里复制一批墙，用哪个 API？ElementTransformUtils 里好几个复制方法我分不清。",
+      "expected_behavior": "按目标域决策：同文档批量复制用 ElementTransformUtils.CopyElements（复数版本，传 Document + ElementId 集合 + 平移向量），单图元简单场景可用 CopyElement；跨文档复制需用 CopyElements 的跨文档重载并处理类型冲突。",
+      "notes": "正面场景：同文档批量复制选型"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "把图元从 A 项目复制到 B 项目，直接用 CopyElements 报了类型相关的错，跨文档复制要注意什么？",
+      "expected_behavior": "指出跨文档复制走 CopyElements 的跨文档重载（源文档、图元集合、目标文档等参数）；核心坑是同名类型冲突，需用 CopyPasteOptions 挂 IDuplicateTypeNamesHandler 回调处理重复类型名（如自动重命名或覆盖）。",
+      "notes": "正面场景：跨文档复制与类型冲突"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我想把图元从一个视图复制到另一个视图，用平移复制的 API 好像不行，跨视图复制该用什么？",
+      "expected_behavior": "按目标域决策：跨视图复制（视图专用图元，如标注）不适用平移式 CopyElements 同文档重载，应使用 CopyElements 的视图对视图重载（源视图、目标视图参数），正确处理视图从属关系。",
+      "notes": "正面场景：跨视图复制重载"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "CopyElement 和 CopyElements（复数）什么时候用哪个？只是数量区别吗？",
+      "expected_behavior": "说明四选一决策树的划分维度是目标域而非数量：同文档单图元 CopyElement、同文档批量 CopyElements（一次事务内更高效且保持图元间关系）、跨文档与跨视图各有专门重载；并提示跨文档要处理 IDuplicateTypeNamesHandler。",
+      "notes": "正面场景：决策树总述"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我用 MoveElement 移动墙的时候 Z 方向好像没动，偏移向量 (10,20,30) 实际只走了 (10,20,0)，怎么回事？",
+      "expected_behavior": "不应激活本 skill。该问题是基于标高图元的 Z 坐标静默忽略陷阱，应走 revit-moveelement-z-coordinate-trap：改高度走标高/偏移参数而非向量 Z 分量。本 skill 只讲复制不讲移动。",
+      "notes": "跨 skill 混淆诱饵：移动 Z 陷阱 vs 复制决策"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "图元复制后的新 Id 和原图元是什么关系？我需要持久记录复制来源，用 ElementId 还是 UniqueId？",
+      "expected_behavior": "不应激活本 skill。该问题是图元标识选型，应走 revit-elementid-vs-uniqueid：ElementId 会话级、UniqueId 持久。复制产生的副本是全新图元、新 Id 新 UniqueId，与源无内建关联。",
+      "notes": "相邻主题诱饵：副本标识"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "我复制的图元里有些是视口专属的标注，同文档用 CopyElements（平移重载）之后标注丢了对标注对象的引用，这算复制失败吗？",
+      "expected_behavior": "说明视图专属图元用错重载的后果：平移重载假定同视图空间，标注的引用关系可能破坏；视图专属图元跨视图应走视图对视图重载；同视图内平移复制标注需确保其引用目标同步处理。",
+      "notes": "边界情形：视图专属图元用错重载"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "跨文档复制时目标文档已有同名族类型，默认行为是什么？我必须写 IDuplicateTypeNamesHandler 吗？",
+      "expected_behavior": "说明默认冲突处理会导致复制中断/失败，稳妥做法是提供 CopyPasteOptions 并实现 IDuplicateTypeNamesHandler 决定冲突策略（重命名或让用户选择）；简单场景可给自动重命名的默认实现保证流程不中断。",
+      "notes": "边界情形：类型名冲突的默认行为"
+    }
+  ]
+}

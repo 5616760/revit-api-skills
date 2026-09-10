@@ -1,0 +1,62 @@
+{
+  "skill": "revit-schema-immutable-after-finish",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我的可扩展存储 Schema 已经上线（Finish 完成）了，现在要给它加一个字段且不能丢老数据，该怎么做？",
+      "expected_behavior": "指出 SchemaBuilder.Finish() 之后 Schema 不可再编辑——不能加字段、不能改字段类型、不能改权限，没有运行时 API 可改；正确做法三步：创建新 Schema 并在名称里嵌版本号（如 WireSpliceLocation_v2）、从旧 Entity 读数据写入新 Schema 的 Entity、用 SchemaList 维护 v1→v2 兼容关系。",
+      "notes": "正面场景：上线后加字段的标准应对"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "可扩展存储的数据结构要升级了，我想设计一套版本化管理策略，Schema 本身支持版本号或迁移工具吗？",
+      "expected_behavior": "说明版本化只能在名称里嵌版本号、创建新 Schema 做数据迁移：Schema 随文档保存、持久化后读取的也是不可变对象；思路与共享参数 .txt 定义文件的版本管理一致；数据迁移流程为遍历挂载旧 Entity 的图元 → 读旧数据 → 创建新 Entity 赋值 → SetEntity，旧 Entity 可清理。",
+      "notes": "正面场景：版本化策略设计"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "项目里同时存在 Xxx 和 Xxx_v2 两个版本的 Schema 数据，怎么维护它们之间的兼容关系？",
+      "expected_behavior": "用 SchemaList 维护 v1→v2 兼容关系：识别图元上挂的是哪个版本的 Entity，读取时按版本走对应 Schema，迁移时统一升到 v2 后清理旧 Entity；多版本 Schema 数据兼容管理是本 skill 的核心场景之一。",
+      "notes": "正面场景：多版本 Schema 数据兼容"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我在 Finish 之后又调了一次 AddSimpleField，程序直接抛异常崩了，这个异常具体是什么行为？",
+      "expected_behavior": "不应激活本 skill 作为主答。AddSimpleField 后再改字段的具体抛异常反例应走 revit-schema-fieldbuilder-one-shot：Finish 后所有 AddXxxField 与 FieldBuilder 写方法（SetUnitType/SetDocumentation/SetSubSchemaGUID）不可用并抛异常。本 skill 是 Schema 不可变的版本化管理策略，反例行为细节以那个 skill 为准。",
+      "notes": "跨 skill 混淆诱饵：抛异常反例 skill vs 版本化策略 skill"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我第一次用 SchemaBuilder 从零开始建 Schema，权限、字段、Finish 的完整流程和顺序是什么？",
+      "expected_behavior": "不应激活本 skill。首次构建 Schema 属于六步流水线范畴，应走 revit-extensible-storage-pipeline：建 Schema → 设权限 → 定义字段 → Finish → 创建 Entity → 赋值 → 挂载图元。本 skill 的边界明确排除首次构建（Finish 前自由定义字段）。",
+      "notes": "跨 skill 混淆诱饵：六步流水线 vs 不可变约束"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "我们的共享参数定义文件要加一个新参数定义，是不是也要像 Schema 一样建新版本做迁移？",
+      "expected_behavior": "不应激活本 skill。共享参数走 .txt 定义文件、可随时编辑追加定义，不存在 Schema 的一次性不可变约束；该问题属于共享参数文件管理范畴。本 skill 的对比点恰恰是：SchemaBuilder（一次性，完成后失效）vs 共享参数 .txt 定义文件（可随时编辑）。",
+      "notes": "相邻主题诱饵：共享参数 .txt 可编辑 vs Schema 不可变"
+    },
+    {
+      "id": "edge-case-01",
+      "type": "edge_case",
+      "prompt": "文档里读到的 Schema 对象，能不能趁文档没关闭的时候改一改它的字段定义？和刚 Finish 的 Schema 行为一样吗？",
+      "expected_behavior": "说明 Schema 随文档保存、持久化后读取的同样是不可变对象——无论刚 Finish 还是从已保存文档读出，都不能加字段/改类型/改权限；不存在\"文档会话内可改\"的窗口期，要变更只能走新版本 Schema + 数据迁移。",
+      "notes": "边界情形：持久化后的 Schema 同样不可变"
+    },
+    {
+      "id": "edge-case-02",
+      "type": "edge_case",
+      "prompt": "我想改的不是字段而是 Schema 的读写权限，Finish 之后把 Vendor 写权限放宽成 Public，这个可以吗？",
+      "expected_behavior": "指出权限同样在不可变范围内：Finish 后不能改权限、不能加字段、不能改字段类型——三条都是 Schema 不可变的内容；变更权限也只能创建新版本 Schema 并迁移数据。",
+      "notes": "边界情形：权限变更也在不可变约束内"
+    }
+  ]
+}
